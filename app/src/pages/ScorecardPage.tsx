@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import BasesDiagram from '../components/BasesDiagram'
+import TeamLineupViewer from '../components/TeamLineupViewer'
 import { changePitcher, createGame, overrideBases, RECORDABLE_OUTCOMES, recordPlateAppearance, recordSteal } from '../lib/rules/game'
 import { fatiguePenalty, STEAL_SPEED_THRESHOLD } from '../lib/rules/engine'
 import { ABILITY_DESCRIPTIONS, isFatigueExempt } from '../lib/rules/abilities'
@@ -106,6 +107,9 @@ export default function ScorecardPage() {
 
   const fieldingRoster = battingIsAway ? homeRoster : awayRoster
   const availablePitchers = [...fieldingRoster.startingPitchers, ...fieldingRoster.reliefPitchers]
+
+  const awayHighlightId = battingIsAway ? batterId : game.awayCurrentPitcherId
+  const homeHighlightId = battingIsAway ? game.homeCurrentPitcherId : batterId
 
   const stealCandidates: { base: 'first' | 'second'; player: PlayerWithRatings }[] = []
   if (game.bases.first) {
@@ -227,6 +231,11 @@ export default function ScorecardPage() {
           </div>
         </div>
       )}
+
+      <div className="mb-4 space-y-3">
+        <TeamLineupViewer teamName={awayRoster.name} roster={awayRoster} poolById={poolById} highlightId={awayHighlightId} />
+        <TeamLineupViewer teamName={homeRoster.name} roster={homeRoster} poolById={poolById} highlightId={homeHighlightId} />
+      </div>
 
       {game.status === 'in_progress' && (
         <div className="mb-4 space-y-3">

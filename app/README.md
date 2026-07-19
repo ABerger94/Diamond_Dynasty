@@ -36,7 +36,9 @@ npm run lint      # oxlint
   advances the lineup, tracks outs/innings/score, and shows the current batter/pitcher's ratings
   and abilities as reference info — it never decides the outcome. Both rosters need to be loaded
   in this same browser; it's built for one shared device running the game, like a physical
-  scorebook, not each player's own device staying in sync.
+  scorebook, not each player's own device staying in sync. Each team's full lineup (batting
+  order, bench, pitchers) is a collapsible panel — click through anyone's full stat card
+  mid-game, not just whoever's currently up (`components/TeamLineupViewer.tsx`).
 
 ## Data
 
