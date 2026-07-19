@@ -1,7 +1,3 @@
-export type PitchType = 'fastball' | 'breakingBall' | 'changeup'
-export type SwingType = 'contact' | 'normal' | 'power'
-export type HitType = 'groundBall' | 'lineDrive' | 'flyBall' | 'popUp'
-
 export type AtBatOutcome =
   | 'strikeout'
   | 'routineOut'
@@ -64,13 +60,4 @@ export interface GameState {
   status: 'in_progress' | 'final'
   createdAt: string
   updatedAt: string
-}
-
-export interface AtBatResult {
-  outcome: AtBatOutcome
-  pitcherTotal: number
-  batterTotal: number
-  diff: number
-  hitType?: HitType
-  fieldingLocation?: string
 }

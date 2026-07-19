@@ -56,9 +56,11 @@ export interface PitcherStatLine {
   era?: number
   /** Saves; part of the Clutch fallback (closers pitching the highest-leverage innings). */
   saves?: number
-  /** Ground-ball rate, 0-1, if available; used for Movement. */
+  /** True ground-ball rate, 0-1, if available; used for Movement. */
   groundBallRate?: number
-  /** HR/9; Movement falls back to the inverse of this without groundBallRate. */
+  /** Swinging-strike rate, 0-1; Movement's 2nd-choice fallback without groundBallRate. */
+  swingingStrikeRate?: number
+  /** HR/9; Movement's last-resort fallback without either of the above. */
   hrPer9?: number
 }
 

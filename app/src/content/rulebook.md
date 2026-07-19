@@ -4,10 +4,11 @@ A tabletop baseball game played with real, physical baseball cards from any manu
 Card rarity, manufacturer, and year are cosmetic only — the Diamond Dynasty companion app maps
 every card to a set of game ratings derived from the player's real MLB statistics.
 
-> **Companion app note:** every rule below that references a rating, dice roll, or resolution
-> table is implemented exactly as written here in `src/lib/rules/engine.ts`. If you ever change
-> a number in this document, change it in the engine too — this file is the spec, the engine is
-> the implementation.
+> **Companion app note:** the app never rolls dice or decides an outcome — that all happens at the
+> table, exactly as written below. The app's Scorecard page (`src/lib/rules/game.ts`) only records
+> the result the players already reached and keeps the running score, outs, and lineup order.
+> Ratings and ability text shown during a game are reference information for the players' own
+> dice math, not something the app applies for them.
 
 ---
 
@@ -204,16 +205,17 @@ Fatigue penalties persist until the pitcher is removed from the game.
 
 ## 10. Abilities
 
-Some cards carry a named ability with a real mechanical effect, implemented in
-`src/lib/rules/abilities.ts`. A few source descriptions referenced mechanics this engine doesn't
-have (a ball/strike count, a full home/away-and-handedness matchup grid); those have an explicit
-ruling below rather than being silently skipped.
+Some cards carry a named ability. Players apply these themselves at the table, the same as every
+other rule in this book — the one exception is Two-Way Phenom's roster-slot rule, which the Roster
+Builder enforces directly since it's about deckbuilding, not an at-bat. A few source descriptions
+referenced mechanics this game doesn't have (a ball/strike count, a full home/away-and-handedness
+matchup grid); those have an explicit ruling below rather than being silently skipped.
 
 | Ability | Effect |
 |---|---|
-| Two-Way Phenom | Occupies a hitting slot and a pitcher slot at once (§2); never accrues pitcher fatigue (§8). |
+| Two-Way Phenom | Occupies a hitting slot and a pitcher slot at once (§2, enforced by the Roster Builder); ignore pitcher fatigue (§8) entirely for this card. |
 | Bronx Bomber | +1 Power vs. right-handed pitching when batting at home. |
-| Soto Shuffle | +1 Discipline on Contact Swings. *Ruling: stands in for "behind in the count," which isn't tracked.* |
+| Soto Shuffle | +1 Discipline on Contact Swings. *Ruling: stands in for "behind in the count," which this game doesn't track.* |
 | Contact Machine | +1 Contact, always on. *Ruling: stands in for "prevents a rating drop under pressure," which isn't a mechanic here.* |
 | Electric Speed | A single on a line drive or fly ball automatically goes for a double. |
 | Dragon Cutter | +1 Stuff and +1 Velocity closing out the 9th inning (or later) with a 1-run lead. |

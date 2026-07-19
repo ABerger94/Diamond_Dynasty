@@ -1,14 +1,32 @@
 import type { PlayerWithRatings } from '../../store/players'
-import type { Position } from '../../types/player'
 import { HITTER_POSITIONS } from '../../types/player'
-import type { AtBatOutcome, GameState, PitchType, SwingType } from '../../types/game'
+import type { AtBatOutcome, BaseState, GameState } from '../../types/game'
 import type { Roster } from '../../types/roster'
 import { advanceRunners } from './baserunning'
-import { roll2d6, rollDie } from './dice'
-import { defenseCheckToOutcome, fatiguePenalty, resolveAtBat, rollHitLocation, rollHitType } from './engine'
-import { applyBatterAbilities, applyPitcherAbilities, isFatigueExempt, upgradeForElectricSpeed } from './abilities'
 
-const DEFAULT_PITCHER_FIELDING = 10
+/**
+ * The scorekeeper plays the actual at-bat at the table with real cards and dice, then records
+ * the result here. This module only applies the bookkeeping consequences of a result the humans
+ * already decided (base advancement, outs, score, lineup order, half-inning/game-end) — it never
+ * rolls dice or picks an outcome itself.
+ */
+
+/** Outcomes a scorekeeper can record — excludes the non-terminal 'ballInPlay'/'foul' states,
+ * which the table resolves before there's a final result to enter. */
+export const RECORDABLE_OUTCOMES: AtBatOutcome[] = [
+  'strikeout',
+  'routineOut',
+  'groundout',
+  'lineout',
+  'flyout',
+  'sacFly',
+  'popout',
+  'infieldSingle',
+  'single',
+  'double',
+  'triple',
+  'homeRun',
+]
 
 export function createGame(
   awayRoster: Roster,
@@ -48,27 +66,6 @@ export function createGame(
   }
 }
 
-function lookupFielder(
-  location: string,
-  fieldingRoster: Roster,
-  fieldingPitcherId: string | null,
-  poolById: Map<string, PlayerWithRatings>,
-): { fielderId: string | null; fielderRating: number } {
-  if (location === 'P') {
-    return { fielderId: fieldingPitcherId, fielderRating: DEFAULT_PITCHER_FIELDING }
-  }
-  let slot: Position
-  if (location === 'LF/CF') {
-    slot = rollDie(2) === 1 ? 'LF' : 'CF'
-    if (!fieldingRoster.lineup[slot]) slot = slot === 'LF' ? 'CF' : 'LF'
-  } else {
-    slot = location as Position
-  }
-  const fielderId = fieldingRoster.lineup[slot] ?? null
-  const fielderRating = fielderId ? (poolById.get(fielderId)?.ratings.hitter?.display.fielding ?? 10) : 10
-  return { fielderId, fielderRating }
-}
-
 function outcomeLabel(outcome: AtBatOutcome): string {
   const labels: Record<AtBatOutcome, string> = {
     strikeout: 'strikes out',
@@ -89,97 +86,34 @@ function outcomeLabel(outcome: AtBatOutcome): string {
   return labels[outcome]
 }
 
-export interface PlayAtBatParams {
+interface PlayResult {
   state: GameState
-  awayRoster: Roster
-  homeRoster: Roster
-  poolById: Map<string, PlayerWithRatings>
-  pitch: PitchType
-  swing: SwingType
+  extraLog: string[]
 }
 
-export function playAtBat({ state, awayRoster, homeRoster, poolById, pitch, swing }: PlayAtBatParams): GameState {
-  const battingIsAway = state.half === 'top'
-  const fieldingRoster = battingIsAway ? homeRoster : awayRoster
-  const battingOrder = battingIsAway ? state.awayLineupOrder : state.homeLineupOrder
-  const battingIndex = battingIsAway ? state.awayBattingIndex : state.homeBattingIndex
-  const batterId = battingOrder[battingIndex % battingOrder.length]
-  const batter = poolById.get(batterId)
-  const pitcherId = battingIsAway ? state.homeCurrentPitcherId : state.awayCurrentPitcherId
-  const pitcherEntry = pitcherId ? poolById.get(pitcherId) : undefined
-
-  if (!batter?.ratings.hitter || !pitcherEntry?.ratings.pitcher || !pitcherId) {
-    return state // incomplete roster; caller should prevent this
-  }
-
-  const fieldingPitcherOuts = battingIsAway ? state.homePitcherOuts : state.awayPitcherOuts
-  const penalty = isFatigueExempt(pitcherEntry.player)
-    ? 0
-    : fatiguePenalty(pitcherEntry.player.pitcherPosition === 'RP' ? 'RP' : 'SP', pitcherEntry.ratings.pitcher.display.stamina, fieldingPitcherOuts)
-  const fatiguedPitcherRatings = { ...pitcherEntry.ratings.pitcher.display, control: pitcherEntry.ratings.pitcher.display.control - penalty }
-
-  const scoreMargin = battingIsAway ? state.awayScore - state.homeScore : state.homeScore - state.awayScore
-  const pitcherThrows = pitcherEntry.player.throwsBats.split('/')[1] ?? 'R'
-
-  const batterRatings = applyBatterAbilities(batter.player, batter.ratings.hitter.display, {
-    swing,
-    battingTeamIsHome: !battingIsAway,
-    pitcherThrows,
-  })
-  const effectivePitcherRatings = applyPitcherAbilities(pitcherEntry.player, fatiguedPitcherRatings, {
-    inning: state.inning,
-    pitchingTeamLead: -scoreMargin,
-  })
-
-  const atBat = resolveAtBat({
-    batterRatings,
-    pitcherRatings: effectivePitcherRatings,
-    pitch,
-    swing,
-    inning: state.inning,
-    scoreMargin,
-  })
-
-  let outcome: AtBatOutcome = atBat.outcome
-  const logLines: string[] = []
-
-  if (outcome === 'ballInPlay') {
-    const hitType = rollHitType()
-    const location = rollHitLocation()
-    const { fielderId, fielderRating } = lookupFielder(location, fieldingRoster, pitcherId, poolById)
-    const defenderTotal = roll2d6() + fielderRating
-    const runnerTotal = roll2d6() + batterRatings.speed
-    const defenseWins = defenderTotal >= runnerTotal
-    const hasRunnerOnThirdUnderTwoOuts = state.bases.third !== null && state.outs < 2
-    outcome = defenseCheckToOutcome({ hitType, location, defenderTotal, runnerTotal, defenseWins }, hasRunnerOnThirdUnderTwoOuts)
-    const upgraded = upgradeForElectricSpeed(outcome, hitType, batter.player)
-    if (upgraded !== outcome) logLines.push(`${batter.player.name}'s speed turns it into extra bases!`)
-    outcome = upgraded
-    const fielderName = fielderId ? poolById.get(fielderId)?.player.name ?? 'the fielder' : 'the fielder'
-    logLines.push(`Ball in play to ${location} (${hitType}) — ${fielderName} ${defenseWins ? 'makes the play' : "can't get there"}.`)
-  }
-
-  const { bases, runsScored, outsAdded } = advanceRunners(state.bases, outcome, batterId)
-  logLines.push(`${batter.player.name} ${outcomeLabel(outcome)}${runsScored > 0 ? ` (${runsScored} run${runsScored > 1 ? 's' : ''} score!)` : ''}.`)
-
+/** Applies an outs/runs delta to the scorecard: score, line score, pitcher-outs, half-inning
+ * flip, inning increment, and game-end status (Rulebook §9) — but does not touch `log`, leaving
+ * that to the caller so log assembly happens in exactly one place. Shared by plate appearances
+ * and stolen-base attempts, the two ways an out or a run can happen. */
+function applyPlayToState(state: GameState, battingIsAway: boolean, outsAdded: number, runsScored: number): PlayResult {
   let outs = state.outs + outsAdded
   let inning = state.inning
   let half = state.half
-  let awayScore = state.awayScore + (battingIsAway ? runsScored : 0)
-  let homeScore = state.homeScore + (battingIsAway ? 0 : runsScored)
+  const awayScore = state.awayScore + (battingIsAway ? runsScored : 0)
+  const homeScore = state.homeScore + (battingIsAway ? 0 : runsScored)
   const lineScore = state.lineScore.map((row) => ({ ...row }))
   const currentRow = lineScore[inning - 1]
-  const prevInningRuns = battingIsAway ? currentRow.away ?? 0 : currentRow.home ?? 0
+  const prevInningRuns = battingIsAway ? (currentRow.away ?? 0) : (currentRow.home ?? 0)
   if (battingIsAway) currentRow.away = prevInningRuns + runsScored
   else currentRow.home = prevInningRuns + runsScored
 
   const awayPitcherOuts = state.awayPitcherOuts + (battingIsAway ? 0 : outsAdded)
   const homePitcherOuts = state.homePitcherOuts + (battingIsAway ? outsAdded : 0)
 
-  let newBases = bases
+  let bases = state.bases
   if (outsAdded > 0 && outs >= 3) {
     outs = 0
-    newBases = { first: null, second: null, third: null }
+    bases = { first: null, second: null, third: null }
     if (half === 'top') {
       half = 'bottom'
     } else {
@@ -189,42 +123,114 @@ export function playAtBat({ state, awayRoster, homeRoster, poolById, pitch, swin
     }
   }
 
-  const newAwayBattingIndex = battingIsAway ? state.awayBattingIndex + 1 : state.awayBattingIndex
-  const newHomeBattingIndex = battingIsAway ? state.homeBattingIndex : state.homeBattingIndex + 1
-
   const halfJustCompleted = outsAdded > 0 && state.outs + outsAdded >= 3
-  let status: GameState['status'] = 'in_progress'
+  let status: GameState['status'] = state.status
+  const extraLog: string[] = []
 
-  // Walk-off: home takes the lead batting in the bottom of the 9th or later — ends instantly,
-  // even mid-inning (Rulebook §9).
   if (state.half === 'bottom' && state.inning >= 9 && homeScore > awayScore) {
     status = 'final'
-    logLines.push('Walk-off! The home team wins.')
-  }
-  // Home already leads after the top half of the 9th (or later) completes — bottom half is skipped.
-  else if (state.half === 'top' && state.inning >= 9 && halfJustCompleted && homeScore > awayScore) {
+    extraLog.push('Walk-off! The home team wins.')
+  } else if (state.half === 'top' && state.inning >= 9 && halfJustCompleted && homeScore > awayScore) {
     status = 'final'
-  }
-  // Bottom half of the 9th (or later) completes with a decided score.
-  else if (state.half === 'bottom' && state.inning >= 9 && halfJustCompleted && awayScore !== homeScore) {
+  } else if (state.half === 'bottom' && state.inning >= 9 && halfJustCompleted && awayScore !== homeScore) {
     status = 'final'
   }
 
   return {
-    ...state,
-    inning,
-    half,
-    outs,
-    bases: newBases,
-    awayScore,
-    homeScore,
-    lineScore,
-    awayPitcherOuts,
-    homePitcherOuts,
+    state: {
+      ...state,
+      inning,
+      half,
+      outs,
+      bases,
+      awayScore,
+      homeScore,
+      lineScore,
+      awayPitcherOuts,
+      homePitcherOuts,
+      status,
+      updatedAt: new Date().toISOString(),
+    },
+    extraLog,
+  }
+}
+
+export interface RecordPlateAppearanceParams {
+  state: GameState
+  poolById: Map<string, PlayerWithRatings>
+  outcome: AtBatOutcome
+}
+
+/** Records a plate appearance's already-decided result and advances the lineup. */
+export function recordPlateAppearance({ state, poolById, outcome }: RecordPlateAppearanceParams): GameState {
+  if (state.status !== 'in_progress') return state
+  const battingIsAway = state.half === 'top'
+  const battingOrder = battingIsAway ? state.awayLineupOrder : state.homeLineupOrder
+  const battingIndex = battingIsAway ? state.awayBattingIndex : state.homeBattingIndex
+  if (battingOrder.length === 0) return state
+  const batterId = battingOrder[battingIndex % battingOrder.length]
+  const batter = poolById.get(batterId)
+
+  const { bases, runsScored, outsAdded } = advanceRunners(state.bases, outcome, batterId)
+  const logLine = `${batter?.player.name ?? 'Batter'} ${outcomeLabel(outcome)}${runsScored > 0 ? ` (${runsScored} run${runsScored > 1 ? 's' : ''} score!)` : ''}.`
+
+  const { state: next, extraLog } = applyPlayToState({ ...state, bases }, battingIsAway, outsAdded, runsScored)
+  const newAwayBattingIndex = battingIsAway ? state.awayBattingIndex + 1 : state.awayBattingIndex
+  const newHomeBattingIndex = battingIsAway ? state.homeBattingIndex : state.homeBattingIndex + 1
+
+  return {
+    ...next,
     awayBattingIndex: newAwayBattingIndex,
     homeBattingIndex: newHomeBattingIndex,
-    log: [...state.log, ...logLines].slice(-30),
-    status,
+    log: [...state.log, logLine, ...extraLog].slice(-30),
+  }
+}
+
+export interface RecordStealParams {
+  state: GameState
+  poolById: Map<string, PlayerWithRatings>
+  base: 'first' | 'second'
+  safe: boolean
+}
+
+/** Records a stolen-base attempt's already-decided result (Rulebook §7). */
+export function recordSteal({ state, poolById, base, safe }: RecordStealParams): GameState {
+  if (state.status !== 'in_progress') return state
+  const runnerId = state.bases[base]
+  if (!runnerId) return state
+  const battingIsAway = state.half === 'top'
+  const runnerName = poolById.get(runnerId)?.player.name ?? 'Runner'
+  const target = base === 'first' ? 'second' : 'third'
+
+  let bases: BaseState
+  let outsAdded = 0
+  let logLine: string
+  if (safe) {
+    bases = { ...state.bases, [base]: null, [target]: runnerId }
+    logLine = `${runnerName} steals ${target} base.`
+  } else {
+    bases = { ...state.bases, [base]: null }
+    outsAdded = 1
+    logLine = `${runnerName} is caught stealing ${target} base.`
+  }
+
+  const { state: next, extraLog } = applyPlayToState({ ...state, bases }, battingIsAway, outsAdded, 0)
+  return { ...next, log: [...state.log, logLine, ...extraLog].slice(-30) }
+}
+
+/** Manual correction for anything the recorded outcomes don't cover (wild pitch, error, pickoff,
+ * balk, etc.) — the scorekeeper sets the bases directly rather than the app inferring them. */
+export function overrideBases(state: GameState, bases: BaseState): GameState {
+  return { ...state, bases, updatedAt: new Date().toISOString() }
+}
+
+export function changePitcher(state: GameState, team: 'away' | 'home', playerId: string): GameState {
+  return {
+    ...state,
+    awayCurrentPitcherId: team === 'away' ? playerId : state.awayCurrentPitcherId,
+    homeCurrentPitcherId: team === 'home' ? playerId : state.homeCurrentPitcherId,
+    awayPitcherOuts: team === 'away' ? 0 : state.awayPitcherOuts,
+    homePitcherOuts: team === 'home' ? 0 : state.homePitcherOuts,
     updatedAt: new Date().toISOString(),
   }
 }

@@ -5,7 +5,7 @@ const links = [
   { to: '/players', label: 'Players' },
   { to: '/cards', label: 'Cards' },
   { to: '/roster', label: 'Roster Builder' },
-  { to: '/play', label: 'Play Ball' },
+  { to: '/scorecard', label: 'Scorecard' },
 ]
 
 export default function NavBar() {

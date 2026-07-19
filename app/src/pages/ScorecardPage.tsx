@@ -1,25 +1,35 @@
 import { useMemo, useState } from 'react'
 import BasesDiagram from '../components/BasesDiagram'
-import { createGame, playAtBat } from '../lib/rules/game'
-import { fatiguePenalty } from '../lib/rules/engine'
-import { isFatigueExempt } from '../lib/rules/abilities'
-import { usePlayerPool } from '../store/players'
+import { changePitcher, createGame, overrideBases, RECORDABLE_OUTCOMES, recordPlateAppearance, recordSteal } from '../lib/rules/game'
+import { fatiguePenalty, STEAL_SPEED_THRESHOLD } from '../lib/rules/engine'
+import { ABILITY_DESCRIPTIONS, isFatigueExempt } from '../lib/rules/abilities'
+import { usePlayerPool, type PlayerWithRatings } from '../store/players'
 import { useGameState } from '../store/game'
 import { useRosters } from '../store/rosters'
-import type { PitchType, SwingType } from '../types/game'
+import type { AtBatOutcome } from '../types/game'
 
-const PITCH_OPTIONS: { value: PitchType; label: string }[] = [
-  { value: 'fastball', label: 'Fastball (Velocity)' },
-  { value: 'breakingBall', label: 'Breaking Ball (Stuff)' },
-  { value: 'changeup', label: 'Changeup (Control)' },
-]
-const SWING_OPTIONS: { value: SwingType; label: string }[] = [
-  { value: 'contact', label: 'Contact Swing' },
-  { value: 'normal', label: 'Normal Swing' },
-  { value: 'power', label: 'Power Swing' },
-]
+const OUTCOME_LABELS: Record<AtBatOutcome, string> = {
+  strikeout: 'Strikeout',
+  routineOut: 'Routine Out',
+  ballInPlay: 'Ball In Play',
+  foul: 'Foul',
+  groundout: 'Groundout',
+  lineout: 'Lineout',
+  flyout: 'Flyout',
+  sacFly: 'Sac Fly',
+  popout: 'Popout',
+  infieldSingle: 'Infield Single',
+  single: 'Single',
+  double: 'Double',
+  triple: 'Triple',
+  homeRun: 'Home Run',
+}
+const OUT_OUTCOMES: AtBatOutcome[] = RECORDABLE_OUTCOMES.filter((o) =>
+  ['strikeout', 'routineOut', 'groundout', 'lineout', 'flyout', 'popout', 'sacFly'].includes(o),
+)
+const HIT_OUTCOMES: AtBatOutcome[] = RECORDABLE_OUTCOMES.filter((o) => !OUT_OUTCOMES.includes(o))
 
-export default function PlayPage() {
+export default function ScorecardPage() {
   const pool = usePlayerPool()
   const { rosters } = useRosters()
   const { game, setGame, endGame } = useGameState()
@@ -29,8 +39,6 @@ export default function PlayPage() {
   const [homeRosterId, setHomeRosterId] = useState('')
   const [awayPitcherId, setAwayPitcherId] = useState('')
   const [homePitcherId, setHomePitcherId] = useState('')
-  const [pitch, setPitch] = useState<PitchType>('fastball')
-  const [swing, setSwing] = useState<SwingType>('normal')
 
   const awayRoster = rosters.find((r) => r.id === (game?.awayRosterId ?? awayRosterId)) ?? null
   const homeRoster = rosters.find((r) => r.id === (game?.homeRosterId ?? homeRosterId)) ?? null
@@ -40,47 +48,33 @@ export default function PlayPage() {
     setGame(createGame(awayRoster, homeRoster, awayPitcherId, homePitcherId))
   }
 
-  function resolve() {
-    if (!game || !awayRoster || !homeRoster || game.status === 'final') return
-    setGame(playAtBat({ state: game, awayRoster, homeRoster, poolById, pitch, swing }))
+  function record(outcome: AtBatOutcome) {
+    if (!game) return
+    setGame(recordPlateAppearance({ state: game, poolById, outcome }))
   }
 
-  function changePitcher(team: 'away' | 'home', playerId: string) {
+  function steal(base: 'first' | 'second', safe: boolean) {
     if (!game) return
-    setGame({
-      ...game,
-      awayCurrentPitcherId: team === 'away' ? playerId : game.awayCurrentPitcherId,
-      homeCurrentPitcherId: team === 'home' ? playerId : game.homeCurrentPitcherId,
-      awayPitcherOuts: team === 'away' ? 0 : game.awayPitcherOuts,
-      homePitcherOuts: team === 'home' ? 0 : game.homePitcherOuts,
-    })
+    setGame(recordSteal({ state: game, poolById, base, safe }))
+  }
+
+  function clearBase(base: 'first' | 'second' | 'third') {
+    if (!game) return
+    setGame(overrideBases(game, { ...game.bases, [base]: null }))
   }
 
   if (!game) {
     return (
       <div className="max-w-xl">
-        <h1 className="mb-1 text-2xl font-bold text-slate-100">Play Ball</h1>
-        <p className="mb-4 text-sm text-slate-400">Pick two rosters to start a game. Away bats first.</p>
+        <h1 className="mb-1 text-2xl font-bold text-slate-100">Scorecard</h1>
+        <p className="mb-4 text-sm text-slate-400">
+          Play the game at the table with real cards and dice per the Rulebook. Pick two rosters here, then record each
+          plate appearance's result as it happens — the app just keeps score. Away bats first.
+        </p>
         {rosters.length < 1 && <p className="text-sm text-amber-400">Build at least one roster first on the Roster Builder page.</p>}
         <div className="space-y-4">
-          <TeamPicker
-            label="Away Team"
-            rosters={rosters}
-            rosterId={awayRosterId}
-            onRosterChange={setAwayRosterId}
-            pitcherId={awayPitcherId}
-            onPitcherChange={setAwayPitcherId}
-            poolById={poolById}
-          />
-          <TeamPicker
-            label="Home Team"
-            rosters={rosters}
-            rosterId={homeRosterId}
-            onRosterChange={setHomeRosterId}
-            pitcherId={homePitcherId}
-            onPitcherChange={setHomePitcherId}
-            poolById={poolById}
-          />
+          <TeamPicker label="Away Team" rosters={rosters} rosterId={awayRosterId} onRosterChange={setAwayRosterId} pitcherId={awayPitcherId} onPitcherChange={setAwayPitcherId} poolById={poolById} />
+          <TeamPicker label="Home Team" rosters={rosters} rosterId={homeRosterId} onRosterChange={setHomeRosterId} pitcherId={homePitcherId} onPitcherChange={setHomePitcherId} poolById={poolById} />
           <button
             onClick={startGame}
             disabled={!awayRosterId || !homeRosterId || !awayPitcherId || !homePitcherId}
@@ -113,10 +107,20 @@ export default function PlayPage() {
   const fieldingRoster = battingIsAway ? homeRoster : awayRoster
   const availablePitchers = [...fieldingRoster.startingPitchers, ...fieldingRoster.reliefPitchers]
 
+  const stealCandidates: { base: 'first' | 'second'; player: PlayerWithRatings }[] = []
+  if (game.bases.first) {
+    const p = poolById.get(game.bases.first)
+    if (p) stealCandidates.push({ base: 'first', player: p })
+  }
+  if (game.bases.second) {
+    const p = poolById.get(game.bases.second)
+    if (p) stealCandidates.push({ base: 'second', player: p })
+  }
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100">Play Ball</h1>
+        <h1 className="text-2xl font-bold text-slate-100">Scorecard</h1>
         <button onClick={endGame} className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">
           End / Discard Game
         </button>
@@ -167,8 +171,18 @@ export default function PlayPage() {
             {game.half === 'top' ? 'Top' : 'Bottom'} of inning {game.inning} · {game.outs} out{game.outs === 1 ? '' : 's'}
           </p>
         </div>
-        <div className="flex items-center justify-center rounded-md border border-slate-800 bg-slate-900 p-4">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-slate-800 bg-slate-900 p-4">
           <BasesDiagram bases={game.bases} />
+          <div className="flex gap-2 text-[10px] text-slate-500">
+            {(['first', 'second', 'third'] as const).map(
+              (b) =>
+                game.bases[b] && (
+                  <button key={b} onClick={() => clearBase(b)} className="rounded border border-slate-700 px-1.5 py-0.5 hover:bg-slate-800">
+                    Clear {b}
+                  </button>
+                ),
+            )}
+          </div>
         </div>
       </div>
 
@@ -177,49 +191,28 @@ export default function PlayPage() {
           <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">At bat</p>
             <p className="text-lg font-bold text-slate-100">{batter.player.name}</p>
-            <p className="mb-3 text-xs text-slate-400">
-              CON {batter.ratings.hitter.display.contact} · POW {batter.ratings.hitter.display.power} · SPD{' '}
-              {batter.ratings.hitter.display.speed}
+            <p className="mb-2 text-xs text-slate-400">
+              CON {batter.ratings.hitter.display.contact} · POW {batter.ratings.hitter.display.power} · DIS{' '}
+              {batter.ratings.hitter.display.discipline} · SPD {batter.ratings.hitter.display.speed} · CLU{' '}
+              {batter.ratings.hitter.display.clutch}
             </p>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Swing type</label>
-            <select
-              value={swing}
-              onChange={(e) => setSwing(e.target.value as SwingType)}
-              className="w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100"
-            >
-              {SWING_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <AbilityReminders player={batter.player} />
           </div>
           <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Pitching</p>
             <p className="text-lg font-bold text-slate-100">
               {pitcherEntry.player.name} {penalty > 0 && <span className="text-xs font-normal text-red-400">(-{penalty} CTL fatigue)</span>}
             </p>
-            <p className="mb-3 text-xs text-slate-400">
+            <p className="mb-2 text-xs text-slate-400">
               VEL {pitcherEntry.ratings.pitcher.display.velocity} · STF {pitcherEntry.ratings.pitcher.display.stuff} · CTL{' '}
-              {pitcherEntry.ratings.pitcher.display.control}
+              {pitcherEntry.ratings.pitcher.display.control} · CLU {pitcherEntry.ratings.pitcher.display.clutch}
             </p>
-            <label className="mb-1 block text-xs font-medium text-slate-400">Pitch type</label>
-            <select
-              value={pitch}
-              onChange={(e) => setPitch(e.target.value as PitchType)}
-              className="mb-2 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100"
-            >
-              {PITCH_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <AbilityReminders player={pitcherEntry.player} />
             {availablePitchers.length > 1 && (
               <select
                 value=""
-                onChange={(e) => e.target.value && changePitcher(battingIsAway ? 'home' : 'away', e.target.value)}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-400"
+                onChange={(e) => e.target.value && setGame(changePitcher(game, battingIsAway ? 'home' : 'away', e.target.value))}
+                className="mt-2 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-400"
               >
                 <option value="">Make a pitching change...</option>
                 {availablePitchers
@@ -236,9 +229,51 @@ export default function PlayPage() {
       )}
 
       {game.status === 'in_progress' && (
-        <button onClick={resolve} className="mb-4 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500">
-          Resolve At-Bat
-        </button>
+        <div className="mb-4 space-y-3">
+          <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Record the result</p>
+            <div className="mb-2 flex flex-wrap gap-2">
+              {OUT_OUTCOMES.map((o) => (
+                <button key={o} onClick={() => record(o)} className="rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800">
+                  {OUTCOME_LABELS[o]}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {HIT_OUTCOMES.map((o) => (
+                <button
+                  key={o}
+                  onClick={() => record(o)}
+                  className="rounded-md border border-emerald-800 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-300 hover:bg-emerald-900/40"
+                >
+                  {OUTCOME_LABELS[o]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {stealCandidates.length > 0 && (
+            <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Steal attempt</p>
+              <div className="flex flex-wrap gap-3">
+                {stealCandidates.map(({ base, player }) => (
+                  <div key={base} className="flex items-center gap-2 text-sm text-slate-300">
+                    <span>
+                      {player.player.name} ({base}, SPD {player.ratings.hitter?.display.speed ?? '-'}
+                      {(player.ratings.hitter?.display.speed ?? 0) < STEAL_SPEED_THRESHOLD ? ' — below threshold' : ''})
+                    </span>
+                    <button onClick={() => steal(base, true)} className="rounded border border-emerald-700 px-2 py-1 text-xs text-emerald-400 hover:bg-emerald-950">
+                      Safe
+                    </button>
+                    <button onClick={() => steal(base, false)} className="rounded border border-red-700 px-2 py-1 text-xs text-red-400 hover:bg-red-950">
+                      Out
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
@@ -249,6 +284,19 @@ export default function PlayPage() {
           ))}
         </ul>
       </div>
+    </div>
+  )
+}
+
+function AbilityReminders({ player }: { player: PlayerWithRatings['player'] }) {
+  if (!player.abilities || player.abilities.length === 0) return null
+  return (
+    <div className="mb-2 space-y-1">
+      {player.abilities.map((name) => (
+        <p key={name} className="text-xs">
+          <span className="font-semibold text-amber-300">{name}:</span> <span className="text-slate-400">{ABILITY_DESCRIPTIONS[name]}</span>
+        </p>
+      ))}
     </div>
   )
 }

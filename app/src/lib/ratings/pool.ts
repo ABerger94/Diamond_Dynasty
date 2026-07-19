@@ -1,17 +1,14 @@
-import type {
-  DerivedRatings,
-  HitterRatings,
-  HitterStatLine,
-  PitcherRatings,
-  PitcherStatLine,
-  Player,
-} from '../types/player'
-
-/** Rating scale bounds, per the v1.0 rulebook (§3). */
-const SCALE_MIN = 1
-const SCALE_MAX = 20
-/** Neutral percentile used when neither a stat nor its fallback is available for a rating. */
-const NEUTRAL_PERCENTILE = 50
+import type { DerivedRatings, HitterRatings, PitcherRatings, Player } from '../../types/player'
+import {
+  avg,
+  hitterComponents,
+  NEUTRAL_PERCENTILE,
+  percentileToRating,
+  pitcherComponents,
+  round1,
+  type HitterComponents,
+  type PitcherComponents,
+} from './shared'
 
 /**
  * Percentile rank (0-100) of `value` within `population`, using the mean-rank method so ties
@@ -28,18 +25,6 @@ function percentileRank(value: number, population: number[]): number {
   return ((below + 0.5 * equal) / population.length) * 100
 }
 
-function percentileToRating(percentile: number): number {
-  return SCALE_MIN + (percentile / 100) * (SCALE_MAX - SCALE_MIN)
-}
-
-function avg(...percentiles: number[]): number {
-  return percentiles.reduce((sum, p) => sum + p, 0) / percentiles.length
-}
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10
-}
-
 /** Percentile of `value` in `population`, filtering both to only the rows where the field is
  * defined — lets a rating fall back to a different stat when the primary one is missing. */
 function percentileOfDefined<T>(rows: T[], getter: (row: T) => number | undefined, value: number | undefined): number | undefined {
@@ -48,78 +33,11 @@ function percentileOfDefined<T>(rows: T[], getter: (row: T) => number | undefine
   return percentileRank(value, population)
 }
 
-// ---- Raw component values, one per rating, fed into percentileRank against the player pool ----
-
-interface HitterComponents {
-  avgStat: number
-  inverseK: number
-  iso: number
-  hrRate: number
-  bbRate: number
-  bbToK: number
-  sbRate: number
-  triplesRate: number
-  fielding: number
-  sprintSpeed?: number
-  avgWithRisp?: number
-  /** wRC+ or OPS+ (100 = average); Clutch fallback when avgWithRisp isn't available. */
-  overallPlus?: number
-}
-
-function hitterComponents(s: HitterStatLine): HitterComponents {
-  const pa = s.plateAppearances || 1
-  const ab = s.atBats || 1
-  const avgStat = s.hits / ab
-  const kRate = s.strikeouts / pa
-  const slg = (s.hits - s.doubles - s.triples - s.homeRuns + 2 * s.doubles + 3 * s.triples + 4 * s.homeRuns) / ab
-  return {
-    avgStat,
-    inverseK: 1 - kRate,
-    iso: slg - avgStat,
-    hrRate: s.homeRuns / pa,
-    bbRate: s.walks / pa,
-    bbToK: s.walks / Math.max(s.strikeouts, 1),
-    sbRate: (s.stolenBases - 0.5 * s.caughtStealing) / pa,
-    triplesRate: s.triples / pa,
-    fielding: s.fieldingRunsAboveAvg,
-    sprintSpeed: s.sprintSpeedFtPerSec,
-    avgWithRisp: s.avgWithRisp,
-    overallPlus: s.wrcPlus ?? s.opsPlus,
-  }
-}
-
-interface PitcherComponents {
-  velo: number
-  kRate: number
-  inverseBb: number
-  outsPerAppearance: number
-  groundBallRate?: number
-  inverseHr9?: number
-  inverseCloseEra?: number
-  inverseEra?: number
-  saveRate?: number
-}
-
-function pitcherComponents(s: PitcherStatLine): PitcherComponents {
-  const bf = s.battersFaced || 1
-  const appearances = s.appearances || 1
-  return {
-    velo: s.avgFastballVeloMph,
-    kRate: s.strikeouts / bf,
-    inverseBb: 1 - s.walks / bf,
-    outsPerAppearance: s.outsRecorded / appearances,
-    groundBallRate: s.groundBallRate,
-    inverseHr9: s.hrPer9 !== undefined ? -s.hrPer9 : undefined,
-    inverseCloseEra: s.eraCloseAndLate !== undefined ? -s.eraCloseAndLate : undefined,
-    inverseEra: s.era !== undefined ? -s.era : undefined,
-    saveRate: s.saves !== undefined ? s.saves / appearances : undefined,
-  }
-}
-
 /**
  * Derives 1-20 ratings for every hitter/pitcher in `players`, percentile-ranked against that
  * same pool. Call with the full active player pool so ratings stay relative and stable; ratings
- * will shift slightly as players are added to/removed from the pool.
+ * will shift slightly as players are added to/removed from the pool. For scoring a single player
+ * looked up on demand (no pool to rank against), see reference.ts instead.
  */
 export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRatings> {
   const hitters = players.filter((p) => p.hitterStats)
@@ -204,8 +122,9 @@ export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRati
     const controlPct = percentileRank(c.inverseBb, pitcherPop.inverseBb)
 
     const gbPct = percentileOfDefined(pitcherRows, (r) => r.c.groundBallRate, c.groundBallRate)
+    const swStrPct = percentileOfDefined(pitcherRows, (r) => r.c.swingingStrikeRate, c.swingingStrikeRate)
     const hr9Pct = percentileOfDefined(pitcherRows, (r) => r.c.inverseHr9, c.inverseHr9)
-    const movementPct = gbPct ?? hr9Pct ?? NEUTRAL_PERCENTILE
+    const movementPct = gbPct ?? swStrPct ?? hr9Pct ?? NEUTRAL_PERCENTILE
 
     const staminaPct = percentileRank(c.outsPerAppearance, pitcherPop.outsPerAppearance)
 

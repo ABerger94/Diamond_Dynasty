@@ -226,8 +226,8 @@ function pitcher(
     avgFastballVeloMph,
     era,
     saves,
-    // No GB% column in the source; swinging-strike% stands in for Movement instead.
-    groundBallRate: swingingStrikePct / 100,
+    // No true GB% column in the source; swingingStrikeRate is Movement's 2nd-choice fallback.
+    swingingStrikeRate: swingingStrikePct / 100,
   }
 }
 

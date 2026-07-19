@@ -7,7 +7,7 @@ import RulebookPage from './pages/RulebookPage.tsx'
 import PlayersPage from './pages/PlayersPage.tsx'
 import CardsPage from './pages/CardsPage.tsx'
 import RosterPage from './pages/RosterPage.tsx'
-import PlayPage from './pages/PlayPage.tsx'
+import ScorecardPage from './pages/ScorecardPage.tsx'
 
 const router = createBrowserRouter([
   {
@@ -18,7 +18,7 @@ const router = createBrowserRouter([
       { path: 'players', element: <PlayersPage /> },
       { path: 'cards', element: <CardsPage /> },
       { path: 'roster', element: <RosterPage /> },
-      { path: 'play', element: <PlayPage /> },
+      { path: 'scorecard', element: <ScorecardPage /> },
     ],
   },
 ])
