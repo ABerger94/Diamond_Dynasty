@@ -49,7 +49,9 @@ export interface PitcherStatLine {
   walks: number
   hits: number
   homeRuns: number
-  avgFastballVeloMph: number
+  /** Statcast-only; absent from basic stats feeds (e.g. MLB Stats API's free endpoints). When
+   * missing, Velocity falls back to a neutral rating rather than being penalized. */
+  avgFastballVeloMph?: number
   /** ERA in high-leverage/late-and-close situations, if available; used for Clutch. */
   eraCloseAndLate?: number
   /** Season ERA; Clutch falls back to this (blended with save rate) without eraCloseAndLate. */

@@ -56,7 +56,7 @@ export function deriveRatingsFromReference(player: Player): DerivedRatings {
 
   if (player.pitcherStats) {
     const c = pitcherComponents(player.pitcherStats)
-    const velocityPct = scoreAgainstReference(c.velo, PITCHER_REFERENCE.velo)
+    const velocityPct = c.velo !== undefined ? scoreAgainstReference(c.velo, PITCHER_REFERENCE.velo) : NEUTRAL_PERCENTILE
     const stuffPct = scoreAgainstReference(c.kRate, PITCHER_REFERENCE.kRate)
     const controlPct = scoreAgainstReference(c.inverseBb, PITCHER_REFERENCE.inverseBb)
 

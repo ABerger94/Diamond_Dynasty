@@ -64,7 +64,6 @@ export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRati
   }
 
   const pitcherPop = {
-    velo: ppop(pitcherRows, 'velo'),
     kRate: ppop(pitcherRows, 'kRate'),
     inverseBb: ppop(pitcherRows, 'inverseBb'),
     outsPerAppearance: ppop(pitcherRows, 'outsPerAppearance'),
@@ -117,7 +116,7 @@ export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRati
 
   for (const row of pitcherRows) {
     const c = row.c
-    const velocityPct = percentileRank(c.velo, pitcherPop.velo)
+    const velocityPct = percentileOfDefined(pitcherRows, (r) => r.c.velo, c.velo) ?? NEUTRAL_PERCENTILE
     const stuffPct = percentileRank(c.kRate, pitcherPop.kRate)
     const controlPct = percentileRank(c.inverseBb, pitcherPop.inverseBb)
 

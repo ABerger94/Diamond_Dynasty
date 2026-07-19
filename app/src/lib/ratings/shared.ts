@@ -60,7 +60,7 @@ export function hitterComponents(s: HitterStatLine): HitterComponents {
 }
 
 export interface PitcherComponents {
-  velo: number
+  velo?: number
   kRate: number
   inverseBb: number
   outsPerAppearance: number
