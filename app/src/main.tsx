@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import RulebookPage from './pages/RulebookPage.tsx'
 import PlayersPage from './pages/PlayersPage.tsx'
+import CardsPage from './pages/CardsPage.tsx'
 import RosterPage from './pages/RosterPage.tsx'
 import PlayPage from './pages/PlayPage.tsx'
 
@@ -15,6 +16,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <RulebookPage /> },
       { path: 'players', element: <PlayersPage /> },
+      { path: 'cards', element: <CardsPage /> },
       { path: 'roster', element: <RosterPage /> },
       { path: 'play', element: <PlayPage /> },
     ],

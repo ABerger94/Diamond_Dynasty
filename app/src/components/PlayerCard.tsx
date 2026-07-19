@@ -1,3 +1,4 @@
+import { ABILITY_DESCRIPTIONS } from '../lib/rules/abilities'
 import type { PlayerWithRatings } from '../store/players'
 import RatingBar from './RatingBar'
 
@@ -17,6 +18,11 @@ export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
           <h3 className="text-lg font-bold text-slate-100">{player.name}</h3>
           <p className="text-sm text-slate-400">
             {player.team} · {player.primaryPosition} · {player.season} season
+            {player.rosterTag && (
+              <span className="ml-2 rounded border border-amber-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
+                {player.rosterTag}
+              </span>
+            )}
           </p>
         </div>
         <div className="text-right">
@@ -26,7 +32,7 @@ export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
       </div>
 
       {hitter && (
-        <div className="space-y-3">
+        <div className="space-y-3 border-t border-slate-800 pt-3 first:border-t-0 first:pt-0">
           <RatingGroup
             title="Offense"
             entries={[
@@ -49,7 +55,7 @@ export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
       )}
 
       {pitcher && (
-        <div className="space-y-3">
+        <div className="space-y-3 border-t border-slate-800 pt-3 first:border-t-0 first:pt-0">
           <RatingGroup
             title="Stuff"
             entries={[
@@ -68,6 +74,18 @@ export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
             dominant={dominantKey(pitcher.display)}
           />
           <RatingGroup title="Mental" entries={[['Clutch', pitcher.display.clutch]]} dominant={dominantKey(pitcher.display)} />
+        </div>
+      )}
+
+      {player.abilities && player.abilities.length > 0 && (
+        <div className="mt-3 space-y-1.5 border-t border-slate-800 pt-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Abilities</div>
+          {player.abilities.map((name) => (
+            <div key={name} className="text-xs">
+              <span className="font-semibold text-amber-300">{name}</span>{' '}
+              <span className="text-slate-400">— {ABILITY_DESCRIPTIONS[name] ?? ''}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>

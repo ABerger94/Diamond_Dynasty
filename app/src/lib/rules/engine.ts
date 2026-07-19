@@ -21,8 +21,10 @@ function pitchRatingAndBonus(ratings: PitcherRatings, pitch: PitchType): number 
 
 function swingRatingAndBonus(ratings: HitterRatings, swing: SwingType): number {
   switch (swing) {
+    // Contact Swing also folds in a small Discipline bonus — plate discipline shrinking the
+    // effective strike zone — so Discipline has a real (if modest) role. Rulebook §5 Phase 2.
     case 'contact':
-      return ratings.contact + 4
+      return ratings.contact + 4 + Math.floor(ratings.discipline / 10)
     case 'power':
       return ratings.power + 6
     case 'normal':

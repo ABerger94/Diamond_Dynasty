@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { SEED_PLAYERS } from '../data/players.seed'
+import { SEED_PLAYERS } from '../data/players.real'
 import { deriveRatingsForPool } from '../lib/ratings'
 import type { DerivedRatings, Player } from '../types/player'
 
@@ -8,7 +8,7 @@ export interface PlayerWithRatings {
   ratings: DerivedRatings
 }
 
-/** Player pool + derived ratings. Seed data only for v1 — see docs/RULEBOOK.md §10. */
+/** Player pool + derived ratings, from src/data/players.real.ts. */
 export function usePlayerPool(): PlayerWithRatings[] {
   return useMemo(() => {
     const derived = deriveRatingsForPool(SEED_PLAYERS)

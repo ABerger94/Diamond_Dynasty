@@ -14,8 +14,8 @@ export default function PlayersPage() {
 
   const filtered = useMemo(() => {
     return pool.filter(({ player }) => {
-      if (role === 'hitters' && player.isPitcher) return false
-      if (role === 'pitchers' && !player.isPitcher) return false
+      if (role === 'hitters' && !player.hitterStats) return false
+      if (role === 'pitchers' && !player.pitcherStats) return false
       if (position !== 'all' && player.primaryPosition !== position) return false
       if (query && !player.name.toLowerCase().includes(query.toLowerCase())) return false
       return true

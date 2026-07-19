@@ -31,6 +31,10 @@ Build a 25-player roster from your card collection:
 | Starting pitchers | 5 |
 | Relief pitchers | 6 |
 
+**Two-Way players:** a card with the Two-Way Phenom ability (§10) may occupy both a hitting slot
+(lineup or bench) *and* a pitcher slot (starting or relief) at the same time — it isn't two
+copies of the card, just one card doing both jobs.
+
 ---
 
 ## 3. Player Ratings
@@ -55,9 +59,13 @@ against the current player pool.
 Reference points on the 1–20 scale: **10–11 is league average**, **17+ is All-Star caliber**,
 **19–20 is historically elite**, **3 and below is replacement level**.
 
-`Discipline` is calculated and displayed on every hitter card but is not yet consumed by the
-core at-bat resolution (see §10, Known Limitations). It exists today for player evaluation and
-future rule expansions (e.g. a walk system).
+`Discipline` factors into Contact Swings specifically (§5 Phase 2) — it does not have a full
+walk/count system behind it yet (§11, Known Limitations).
+
+Not every data source has the same advanced splits (Sprint Speed, RISP average, ground-ball
+rate, high-leverage ERA). Where one is missing, the affected rating falls back to the next-best
+available stat instead of going unrated — see `src/lib/ratings.ts` for the exact fallback per
+rating.
 
 ---
 
@@ -90,7 +98,7 @@ The batter secretly picks one swing type. Each swing selects which rating the ro
 
 | Swing | Rating used | Modifier |
 |---|---|---|
-| Contact Swing | Contact only | +4 |
+| Contact Swing | Contact only | +4, plus Discipline ÷ 10 (rounded down) |
 | Normal Swing | Average of Contact and Power (rounded) | none |
 | Power Swing | Power only | +6 |
 
@@ -194,14 +202,30 @@ Fatigue penalties persist until the pitcher is removed from the game.
 
 ---
 
-## 10. Known Limitations / Roadmap
+## 10. Abilities
+
+Some cards carry a named ability with a real mechanical effect, implemented in
+`src/lib/rules/abilities.ts`. A few source descriptions referenced mechanics this engine doesn't
+have (a ball/strike count, a full home/away-and-handedness matchup grid); those have an explicit
+ruling below rather than being silently skipped.
+
+| Ability | Effect |
+|---|---|
+| Two-Way Phenom | Occupies a hitting slot and a pitcher slot at once (§2); never accrues pitcher fatigue (§8). |
+| Bronx Bomber | +1 Power vs. right-handed pitching when batting at home. |
+| Soto Shuffle | +1 Discipline on Contact Swings. *Ruling: stands in for "behind in the count," which isn't tracked.* |
+| Contact Machine | +1 Contact, always on. *Ruling: stands in for "prevents a rating drop under pressure," which isn't a mechanic here.* |
+| Electric Speed | A single on a line drive or fly ball automatically goes for a double. |
+| Dragon Cutter | +1 Stuff and +1 Velocity closing out the 9th inning (or later) with a 1-run lead. |
+
+---
+
+## 11. Known Limitations / Roadmap
 
 These are explicit, intentional gaps in v1 — not oversights:
 
-- **No walk/ball-strike count.** Every plate appearance resolves on a single roll; Discipline is
-  tracked but not yet consumed by the engine.
-- **No abilities system yet.** The data model reserves a slot for special abilities per player,
-  but no mechanic uses it in v1.
+- **No walk/ball-strike count.** Every plate appearance resolves on a single roll; Discipline
+  only factors in on Contact Swings (§5 Phase 2), not a full count system.
 - **Balls in play are binary (out or hit).** No fielder's choices, double plays, or errors yet
   (see §6 roadmap note).
 - **No injuries/Durability rating.** Suggested by design review but not required for core

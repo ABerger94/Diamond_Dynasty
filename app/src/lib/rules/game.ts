@@ -6,6 +6,7 @@ import type { Roster } from '../../types/roster'
 import { advanceRunners } from './baserunning'
 import { roll2d6, rollDie } from './dice'
 import { defenseCheckToOutcome, fatiguePenalty, resolveAtBat, rollHitLocation, rollHitType } from './engine'
+import { applyBatterAbilities, applyPitcherAbilities, isFatigueExempt, upgradeForElectricSpeed } from './abilities'
 
 const DEFAULT_PITCHER_FIELDING = 10
 
@@ -112,13 +113,26 @@ export function playAtBat({ state, awayRoster, homeRoster, poolById, pitch, swin
   }
 
   const fieldingPitcherOuts = battingIsAway ? state.homePitcherOuts : state.awayPitcherOuts
-  const penalty = fatiguePenalty(pitcherEntry.player.primaryPosition === 'RP' ? 'RP' : 'SP', pitcherEntry.ratings.pitcher.display.stamina, fieldingPitcherOuts)
-  const effectivePitcherRatings = { ...pitcherEntry.ratings.pitcher.display, control: pitcherEntry.ratings.pitcher.display.control - penalty }
+  const penalty = isFatigueExempt(pitcherEntry.player)
+    ? 0
+    : fatiguePenalty(pitcherEntry.player.pitcherPosition === 'RP' ? 'RP' : 'SP', pitcherEntry.ratings.pitcher.display.stamina, fieldingPitcherOuts)
+  const fatiguedPitcherRatings = { ...pitcherEntry.ratings.pitcher.display, control: pitcherEntry.ratings.pitcher.display.control - penalty }
 
   const scoreMargin = battingIsAway ? state.awayScore - state.homeScore : state.homeScore - state.awayScore
+  const pitcherThrows = pitcherEntry.player.throwsBats.split('/')[1] ?? 'R'
+
+  const batterRatings = applyBatterAbilities(batter.player, batter.ratings.hitter.display, {
+    swing,
+    battingTeamIsHome: !battingIsAway,
+    pitcherThrows,
+  })
+  const effectivePitcherRatings = applyPitcherAbilities(pitcherEntry.player, fatiguedPitcherRatings, {
+    inning: state.inning,
+    pitchingTeamLead: -scoreMargin,
+  })
 
   const atBat = resolveAtBat({
-    batterRatings: batter.ratings.hitter.display,
+    batterRatings,
     pitcherRatings: effectivePitcherRatings,
     pitch,
     swing,
@@ -134,10 +148,13 @@ export function playAtBat({ state, awayRoster, homeRoster, poolById, pitch, swin
     const location = rollHitLocation()
     const { fielderId, fielderRating } = lookupFielder(location, fieldingRoster, pitcherId, poolById)
     const defenderTotal = roll2d6() + fielderRating
-    const runnerTotal = roll2d6() + batter.ratings.hitter.display.speed
+    const runnerTotal = roll2d6() + batterRatings.speed
     const defenseWins = defenderTotal >= runnerTotal
     const hasRunnerOnThirdUnderTwoOuts = state.bases.third !== null && state.outs < 2
     outcome = defenseCheckToOutcome({ hitType, location, defenderTotal, runnerTotal, defenseWins }, hasRunnerOnThirdUnderTwoOuts)
+    const upgraded = upgradeForElectricSpeed(outcome, hitType, batter.player)
+    if (upgraded !== outcome) logLines.push(`${batter.player.name}'s speed turns it into extra bases!`)
+    outcome = upgraded
     const fielderName = fielderId ? poolById.get(fielderId)?.player.name ?? 'the fielder' : 'the fielder'
     logLines.push(`Ball in play to ${location} (${hitType}) — ${fielderName} ${defenseWins ? 'makes the play' : "can't get there"}.`)
   }

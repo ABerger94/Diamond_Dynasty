@@ -1,0 +1,46 @@
+import type { CardEntry } from '../types/roster'
+
+/** Sample rows from card_database.csv — illustrates the schema; not an exhaustive card list. */
+export const SEED_CARDS: CardEntry[] = [
+  {
+    id: 'DD-2025-001',
+    playerId: '660271',
+    cardYear: 2025,
+    brand: 'Topps',
+    setName: 'Series 1',
+    cardNumber: '1',
+    isRookie: false,
+    parallel: 'Base',
+    isAutograph: false,
+    isRelic: false,
+    condition: 'Gem Mint 10',
+  },
+  {
+    id: 'DD-2025-002',
+    playerId: '592450',
+    cardYear: 2025,
+    brand: 'Topps',
+    setName: 'Heritage',
+    cardNumber: '99',
+    isRookie: false,
+    parallel: 'Chrome Refractor',
+    serialNumber: '05/99',
+    isAutograph: false,
+    isRelic: false,
+    condition: 'Mint 9',
+  },
+  {
+    id: 'DD-2025-003',
+    playerId: '688335',
+    cardYear: 2024,
+    brand: 'Bowman',
+    setName: 'Chrome',
+    cardNumber: 'BCP-77',
+    isRookie: true,
+    parallel: 'Gold Paper',
+    serialNumber: '22/50',
+    isAutograph: true,
+    isRelic: false,
+    condition: 'Gem Mint 10',
+  },
+]

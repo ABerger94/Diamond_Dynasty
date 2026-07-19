@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import BasesDiagram from '../components/BasesDiagram'
 import { createGame, playAtBat } from '../lib/rules/game'
 import { fatiguePenalty } from '../lib/rules/engine'
+import { isFatigueExempt } from '../lib/rules/abilities'
 import { usePlayerPool } from '../store/players'
 import { useGameState } from '../store/game'
 import { useRosters } from '../store/rosters'
@@ -104,9 +105,10 @@ export default function PlayPage() {
   const pitcherId = battingIsAway ? game.homeCurrentPitcherId : game.awayCurrentPitcherId
   const pitcherEntry = pitcherId ? poolById.get(pitcherId) : undefined
   const fieldingOuts = battingIsAway ? game.homePitcherOuts : game.awayPitcherOuts
-  const penalty = pitcherEntry?.ratings.pitcher
-    ? fatiguePenalty(pitcherEntry.player.primaryPosition === 'RP' ? 'RP' : 'SP', pitcherEntry.ratings.pitcher.display.stamina, fieldingOuts)
-    : 0
+  const penalty =
+    pitcherEntry?.ratings.pitcher && !isFatigueExempt(pitcherEntry.player)
+      ? fatiguePenalty(pitcherEntry.player.pitcherPosition === 'RP' ? 'RP' : 'SP', pitcherEntry.ratings.pitcher.display.stamina, fieldingOuts)
+      : 0
 
   const fieldingRoster = battingIsAway ? homeRoster : awayRoster
   const availablePitchers = [...fieldingRoster.startingPitchers, ...fieldingRoster.reliefPitchers]

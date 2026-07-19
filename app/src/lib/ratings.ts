@@ -10,13 +10,15 @@ import type {
 /** Rating scale bounds, per the v1.0 rulebook (§3). */
 const SCALE_MIN = 1
 const SCALE_MAX = 20
+/** Neutral percentile used when neither a stat nor its fallback is available for a rating. */
+const NEUTRAL_PERCENTILE = 50
 
 /**
  * Percentile rank (0-100) of `value` within `population`, using the mean-rank method so ties
  * split the difference rather than all landing on the same edge.
  */
 function percentileRank(value: number, population: number[]): number {
-  if (population.length <= 1) return 50
+  if (population.length <= 1) return NEUTRAL_PERCENTILE
   let below = 0
   let equal = 0
   for (const v of population) {
@@ -38,6 +40,14 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10
 }
 
+/** Percentile of `value` in `population`, filtering both to only the rows where the field is
+ * defined — lets a rating fall back to a different stat when the primary one is missing. */
+function percentileOfDefined<T>(rows: T[], getter: (row: T) => number | undefined, value: number | undefined): number | undefined {
+  if (value === undefined) return undefined
+  const population = rows.map(getter).filter((v): v is number => v !== undefined)
+  return percentileRank(value, population)
+}
+
 // ---- Raw component values, one per rating, fed into percentileRank against the player pool ----
 
 interface HitterComponents {
@@ -47,10 +57,13 @@ interface HitterComponents {
   hrRate: number
   bbRate: number
   bbToK: number
-  sprintSpeed: number
   sbRate: number
+  triplesRate: number
   fielding: number
-  riskAvg: number
+  sprintSpeed?: number
+  avgWithRisp?: number
+  /** wRC+ or OPS+ (100 = average); Clutch fallback when avgWithRisp isn't available. */
+  overallPlus?: number
 }
 
 function hitterComponents(s: HitterStatLine): HitterComponents {
@@ -66,10 +79,12 @@ function hitterComponents(s: HitterStatLine): HitterComponents {
     hrRate: s.homeRuns / pa,
     bbRate: s.walks / pa,
     bbToK: s.walks / Math.max(s.strikeouts, 1),
-    sprintSpeed: s.sprintSpeedFtPerSec,
     sbRate: (s.stolenBases - 0.5 * s.caughtStealing) / pa,
+    triplesRate: s.triples / pa,
     fielding: s.fieldingRunsAboveAvg,
-    riskAvg: s.avgWithRisp,
+    sprintSpeed: s.sprintSpeedFtPerSec,
+    avgWithRisp: s.avgWithRisp,
+    overallPlus: s.wrcPlus ?? s.opsPlus,
   }
 }
 
@@ -77,9 +92,12 @@ interface PitcherComponents {
   velo: number
   kRate: number
   inverseBb: number
-  groundBallRate: number
   outsPerAppearance: number
-  inverseCloseEra: number
+  groundBallRate?: number
+  inverseHr9?: number
+  inverseCloseEra?: number
+  inverseEra?: number
+  saveRate?: number
 }
 
 function pitcherComponents(s: PitcherStatLine): PitcherComponents {
@@ -89,9 +107,12 @@ function pitcherComponents(s: PitcherStatLine): PitcherComponents {
     velo: s.avgFastballVeloMph,
     kRate: s.strikeouts / bf,
     inverseBb: 1 - s.walks / bf,
-    groundBallRate: s.groundBallRate,
     outsPerAppearance: s.outsRecorded / appearances,
-    inverseCloseEra: -s.eraCloseAndLate,
+    groundBallRate: s.groundBallRate,
+    inverseHr9: s.hrPer9 !== undefined ? -s.hrPer9 : undefined,
+    inverseCloseEra: s.eraCloseAndLate !== undefined ? -s.eraCloseAndLate : undefined,
+    inverseEra: s.era !== undefined ? -s.era : undefined,
+    saveRate: s.saves !== undefined ? s.saves / appearances : undefined,
   }
 }
 
@@ -107,7 +128,10 @@ export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRati
   const hitterRows = hitters.map((p) => ({ id: p.id, c: hitterComponents(p.hitterStats!) }))
   const pitcherRows = pitchers.map((p) => ({ id: p.id, c: pitcherComponents(p.pitcherStats!) }))
 
-  const pop = <T,>(rows: { c: T }[], key: keyof T) => rows.map((r) => r.c[key] as unknown as number)
+  const pop = (rows: { c: HitterComponents }[], key: keyof HitterComponents) =>
+    rows.map((r) => r.c[key] as number)
+  const ppop = (rows: { c: PitcherComponents }[], key: keyof PitcherComponents) =>
+    rows.map((r) => r.c[key] as number)
 
   const hitterPop = {
     avgStat: pop(hitterRows, 'avgStat'),
@@ -116,19 +140,16 @@ export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRati
     hrRate: pop(hitterRows, 'hrRate'),
     bbRate: pop(hitterRows, 'bbRate'),
     bbToK: pop(hitterRows, 'bbToK'),
-    sprintSpeed: pop(hitterRows, 'sprintSpeed'),
     sbRate: pop(hitterRows, 'sbRate'),
+    triplesRate: pop(hitterRows, 'triplesRate'),
     fielding: pop(hitterRows, 'fielding'),
-    riskAvg: pop(hitterRows, 'riskAvg'),
   }
 
   const pitcherPop = {
-    velo: pop(pitcherRows, 'velo'),
-    kRate: pop(pitcherRows, 'kRate'),
-    inverseBb: pop(pitcherRows, 'inverseBb'),
-    groundBallRate: pop(pitcherRows, 'groundBallRate'),
-    outsPerAppearance: pop(pitcherRows, 'outsPerAppearance'),
-    inverseCloseEra: pop(pitcherRows, 'inverseCloseEra'),
+    velo: ppop(pitcherRows, 'velo'),
+    kRate: ppop(pitcherRows, 'kRate'),
+    inverseBb: ppop(pitcherRows, 'inverseBb'),
+    outsPerAppearance: ppop(pitcherRows, 'outsPerAppearance'),
   }
 
   const result = new Map<string, DerivedRatings>()
@@ -138,9 +159,19 @@ export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRati
     const contactPct = avg(percentileRank(c.avgStat, hitterPop.avgStat), percentileRank(c.inverseK, hitterPop.inverseK))
     const powerPct = avg(percentileRank(c.iso, hitterPop.iso), percentileRank(c.hrRate, hitterPop.hrRate))
     const disciplinePct = avg(percentileRank(c.bbRate, hitterPop.bbRate), percentileRank(c.bbToK, hitterPop.bbToK))
-    const speedPct = avg(percentileRank(c.sprintSpeed, hitterPop.sprintSpeed), percentileRank(c.sbRate, hitterPop.sbRate))
+
+    const sprintPct = percentileOfDefined(hitterRows, (r) => r.c.sprintSpeed, c.sprintSpeed)
+    const sbPct = percentileRank(c.sbRate, hitterPop.sbRate)
+    const speedPct =
+      sprintPct !== undefined
+        ? avg(sprintPct, sbPct)
+        : avg(sbPct, percentileRank(c.triplesRate, hitterPop.triplesRate))
+
     const fieldingPct = percentileRank(c.fielding, hitterPop.fielding)
-    const clutchPct = percentileRank(c.riskAvg, hitterPop.riskAvg)
+
+    const riskAvgPct = percentileOfDefined(hitterRows, (r) => r.c.avgWithRisp, c.avgWithRisp)
+    const overallPlusPct = percentileOfDefined(hitterRows, (r) => r.c.overallPlus, c.overallPlus)
+    const clutchPct = riskAvgPct ?? overallPlusPct ?? NEUTRAL_PERCENTILE
 
     const hidden: HitterRatings = {
       contact: round1(percentileToRating(contactPct)),
@@ -171,9 +202,21 @@ export function deriveRatingsForPool(players: Player[]): Map<string, DerivedRati
     const velocityPct = percentileRank(c.velo, pitcherPop.velo)
     const stuffPct = percentileRank(c.kRate, pitcherPop.kRate)
     const controlPct = percentileRank(c.inverseBb, pitcherPop.inverseBb)
-    const movementPct = percentileRank(c.groundBallRate, pitcherPop.groundBallRate)
+
+    const gbPct = percentileOfDefined(pitcherRows, (r) => r.c.groundBallRate, c.groundBallRate)
+    const hr9Pct = percentileOfDefined(pitcherRows, (r) => r.c.inverseHr9, c.inverseHr9)
+    const movementPct = gbPct ?? hr9Pct ?? NEUTRAL_PERCENTILE
+
     const staminaPct = percentileRank(c.outsPerAppearance, pitcherPop.outsPerAppearance)
-    const clutchPct = percentileRank(c.inverseCloseEra, pitcherPop.inverseCloseEra)
+
+    const closeEraPct = percentileOfDefined(pitcherRows, (r) => r.c.inverseCloseEra, c.inverseCloseEra)
+    let clutchPct = closeEraPct
+    if (clutchPct === undefined) {
+      const eraPct = percentileOfDefined(pitcherRows, (r) => r.c.inverseEra, c.inverseEra)
+      const savePct = percentileOfDefined(pitcherRows, (r) => r.c.saveRate, c.saveRate)
+      if (eraPct !== undefined && savePct !== undefined) clutchPct = avg(eraPct, savePct)
+      else clutchPct = eraPct ?? savePct ?? NEUTRAL_PERCENTILE
+    }
 
     const hidden: PitcherRatings = {
       velocity: round1(percentileToRating(velocityPct)),

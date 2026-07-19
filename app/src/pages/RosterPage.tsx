@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { usePlayerPool } from '../store/players'
 import { useRosters } from '../store/rosters'
 import type { Position } from '../types/player'
-import { HITTER_POSITIONS } from '../types/player'
+import { eligibleLineupSlots, HITTER_POSITIONS } from '../types/player'
 import { ROSTER_SLOT_LIMITS } from '../types/roster'
 
 export default function RosterPage() {
@@ -14,13 +14,19 @@ export default function RosterPage() {
   const roster = rosters.find((r) => r.id === selectedId) ?? null
 
   const playerById = useMemo(() => new Map(pool.map((p) => [p.player.id, p.player])), [pool])
-  const hitters = pool.filter((p) => !p.player.isPitcher)
-  const startingPitchers = pool.filter((p) => p.player.isPitcher && p.player.primaryPosition === 'SP')
-  const reliefPitchers = pool.filter((p) => p.player.isPitcher && p.player.primaryPosition === 'RP')
+  const hitters = pool.filter((p) => !!p.player.hitterStats)
+  const startingPitchers = pool.filter((p) => !!p.player.pitcherStats && p.player.pitcherPosition === 'SP')
+  const reliefPitchers = pool.filter((p) => !!p.player.pitcherStats && p.player.pitcherPosition === 'RP')
 
-  const usedIds = useMemo(() => {
+  // Separate hitter/pitcher "used" sets (rather than one combined set) so a two-way player's
+  // card can occupy both a lineup slot and a pitcher slot at once — Rulebook Two-Way Phenom.
+  const usedHitterIds = useMemo(() => {
     if (!roster) return new Set<string>()
-    return new Set([...Object.values(roster.lineup), ...roster.bench, ...roster.startingPitchers, ...roster.reliefPitchers])
+    return new Set([...Object.values(roster.lineup), ...roster.bench])
+  }, [roster])
+  const usedPitcherIds = useMemo(() => {
+    if (!roster) return new Set<string>()
+    return new Set([...roster.startingPitchers, ...roster.reliefPitchers])
   }, [roster])
 
   const filledCount = roster
@@ -92,10 +98,8 @@ export default function RosterPage() {
                   key={pos}
                   position={pos}
                   currentId={roster.lineup[pos] ?? null}
-                  options={hitters.filter(
-                    (h) => h.player.primaryPosition === pos || pos === 'DH',
-                  )}
-                  usedIds={usedIds}
+                  options={hitters.filter((h) => eligibleLineupSlots(h.player.primaryPosition).includes(pos))}
+                  usedIds={usedHitterIds}
                   onChange={(playerId) => setLineupSlot(roster.id, pos, playerId)}
                 />
               ))}
@@ -106,21 +110,21 @@ export default function RosterPage() {
             title={`Bench (${roster.bench.length}/${ROSTER_SLOT_LIMITS.bench})`}
             candidates={hitters}
             selected={roster.bench}
-            usedIds={usedIds}
+            usedIds={usedHitterIds}
             onToggle={(id) => toggleListMember(roster.id, 'bench', id, ROSTER_SLOT_LIMITS.bench)}
           />
           <RosterList
             title={`Starting Pitchers (${roster.startingPitchers.length}/${ROSTER_SLOT_LIMITS.startingPitchers})`}
             candidates={startingPitchers}
             selected={roster.startingPitchers}
-            usedIds={usedIds}
+            usedIds={usedPitcherIds}
             onToggle={(id) => toggleListMember(roster.id, 'startingPitchers', id, ROSTER_SLOT_LIMITS.startingPitchers)}
           />
           <RosterList
             title={`Relief Pitchers (${roster.reliefPitchers.length}/${ROSTER_SLOT_LIMITS.reliefPitchers})`}
             candidates={reliefPitchers}
             selected={roster.reliefPitchers}
-            usedIds={usedIds}
+            usedIds={usedPitcherIds}
             onToggle={(id) => toggleListMember(roster.id, 'reliefPitchers', id, ROSTER_SLOT_LIMITS.reliefPitchers)}
           />
         </div>
