@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import PlayerCard from '../components/PlayerCard'
 import { fetchLivePlayer, searchLivePlayers, type LiveSearchResult } from '../lib/liveSearch'
 import { useCustomPlayers } from '../store/customPlayers'
+import { useHiddenPlayers } from '../store/hiddenPlayers'
 import { usePlayerPool, type PlayerWithRatings } from '../store/players'
 import type { Position } from '../types/player'
 import { HITTER_POSITIONS, PITCHER_POSITIONS } from '../types/player'
@@ -10,9 +11,17 @@ type RoleFilter = 'all' | 'hitters' | 'pitchers'
 
 export default function PlayersPage() {
   const pool = usePlayerPool()
+  const { customPlayers, removeCustomPlayer } = useCustomPlayers()
+  const { hiddenIds, hidePlayer, unhideAll } = useHiddenPlayers()
   const [query, setQuery] = useState('')
   const [role, setRole] = useState<RoleFilter>('all')
   const [position, setPosition] = useState<Position | 'all'>('all')
+
+  const customIds = useMemo(() => new Set(customPlayers.map((p) => p.player.id)), [customPlayers])
+  function removeFromPool(playerId: string) {
+    if (customIds.has(playerId)) removeCustomPlayer(playerId)
+    else hidePlayer(playerId)
+  }
 
   const filtered = useMemo(() => {
     return pool.filter(({ player }) => {
@@ -69,11 +78,16 @@ export default function PlayersPage() {
           ))}
         </select>
         <span className="self-center text-xs text-slate-500">{filtered.length} players</span>
+        {hiddenIds.length > 0 && (
+          <button onClick={unhideAll} className="self-center text-xs text-sky-400 hover:text-sky-300">
+            {hiddenIds.length} hidden — restore all
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((entry) => (
-          <PlayerCard key={entry.player.id} {...entry} />
+          <PlayerCard key={entry.player.id} {...entry} onRemove={() => removeFromPool(entry.player.id)} />
         ))}
       </div>
     </div>

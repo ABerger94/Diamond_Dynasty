@@ -1,20 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
+import { createLocalStorageStore } from './createLocalStorageStore'
 import type { PlayerWithRatings } from './players'
 
-const STORAGE_KEY = 'diamond-dynasty:custom-players'
-
-function loadCustomPlayers(): PlayerWithRatings[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as PlayerWithRatings[]) : []
-  } catch {
-    return []
-  }
-}
-
-function saveCustomPlayers(players: PlayerWithRatings[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(players))
-}
+const store = createLocalStorageStore<PlayerWithRatings[]>('diamond-dynasty:custom-players', [])
 
 /**
  * Players added on this device beyond the built-in featured set — mainly those found through
@@ -22,27 +10,24 @@ function saveCustomPlayers(players: PlayerWithRatings[]): void {
  * via a roster import (lib/rosterTransfer.ts) from someone else's device.
  */
 export function useCustomPlayers() {
-  const [customPlayers, setCustomPlayers] = useState<PlayerWithRatings[]>(() => loadCustomPlayers())
+  const [customPlayers, setCustomPlayers] = store.useStore()
 
-  useEffect(() => {
-    saveCustomPlayers(customPlayers)
-  }, [customPlayers])
+  const addCustomPlayer = useCallback(
+    (entry: PlayerWithRatings) => setCustomPlayers((prev) => (prev.some((p) => p.player.id === entry.player.id) ? prev : [...prev, entry])),
+    [setCustomPlayers],
+  )
 
-  const addCustomPlayer = useCallback((entry: PlayerWithRatings) => {
-    setCustomPlayers((prev) => (prev.some((p) => p.player.id === entry.player.id) ? prev : [...prev, entry]))
-  }, [])
+  const addCustomPlayers = useCallback(
+    (entries: PlayerWithRatings[]) =>
+      setCustomPlayers((prev) => {
+        const existingIds = new Set(prev.map((p) => p.player.id))
+        const additions = entries.filter((e) => !existingIds.has(e.player.id))
+        return additions.length > 0 ? [...prev, ...additions] : prev
+      }),
+    [setCustomPlayers],
+  )
 
-  const addCustomPlayers = useCallback((entries: PlayerWithRatings[]) => {
-    setCustomPlayers((prev) => {
-      const existingIds = new Set(prev.map((p) => p.player.id))
-      const additions = entries.filter((e) => !existingIds.has(e.player.id))
-      return additions.length > 0 ? [...prev, ...additions] : prev
-    })
-  }, [])
-
-  const removeCustomPlayer = useCallback((id: string) => {
-    setCustomPlayers((prev) => prev.filter((p) => p.player.id !== id))
-  }, [])
+  const removeCustomPlayer = useCallback((id: string) => setCustomPlayers((prev) => prev.filter((p) => p.player.id !== id)), [setCustomPlayers])
 
   return { customPlayers, addCustomPlayer, addCustomPlayers, removeCustomPlayer }
 }

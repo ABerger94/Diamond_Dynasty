@@ -1,21 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import type { Position } from '../types/player'
 import type { Roster } from '../types/roster'
+import { createLocalStorageStore } from './createLocalStorageStore'
 
-const STORAGE_KEY = 'diamond-dynasty:rosters'
-
-function loadRosters(): Roster[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Roster[]) : []
-  } catch {
-    return []
-  }
-}
-
-function saveRosters(rosters: Roster[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rosters))
-}
+const store = createLocalStorageStore<Roster[]>('diamond-dynasty:rosters', [])
 
 export function emptyRoster(name: string): Roster {
   const now = new Date().toISOString()
@@ -32,36 +20,37 @@ export function emptyRoster(name: string): Roster {
 }
 
 export function useRosters() {
-  const [rosters, setRosters] = useState<Roster[]>(() => loadRosters())
+  const [rosters, setRosters] = store.useStore()
 
-  useEffect(() => {
-    saveRosters(rosters)
-  }, [rosters])
+  const createRoster = useCallback(
+    (name: string) => {
+      const roster = emptyRoster(name)
+      setRosters((prev) => [...prev, roster])
+      return roster
+    },
+    [setRosters],
+  )
 
-  const createRoster = useCallback((name: string) => {
-    const roster = emptyRoster(name)
-    setRosters((prev) => [...prev, roster])
-    return roster
-  }, [])
-
-  const deleteRoster = useCallback((rosterId: string) => {
-    setRosters((prev) => prev.filter((r) => r.id !== rosterId))
-  }, [])
+  const deleteRoster = useCallback((rosterId: string) => setRosters((prev) => prev.filter((r) => r.id !== rosterId)), [setRosters])
 
   /** Adds an imported roster under a fresh id, so it can never collide with (or overwrite) one
    * already on this device — see lib/rosterTransfer.ts. */
-  const importRoster = useCallback((roster: Roster) => {
-    const now = new Date().toISOString()
-    const imported: Roster = { ...roster, id: `roster_${Date.now()}_${Math.round(Math.random() * 1e6)}`, createdAt: now, updatedAt: now }
-    setRosters((prev) => [...prev, imported])
-    return imported
-  }, [])
+  const importRoster = useCallback(
+    (roster: Roster) => {
+      const now = new Date().toISOString()
+      const imported: Roster = { ...roster, id: `roster_${Date.now()}_${Math.round(Math.random() * 1e6)}`, createdAt: now, updatedAt: now }
+      setRosters((prev) => [...prev, imported])
+      return imported
+    },
+    [setRosters],
+  )
 
-  const updateRoster = useCallback((rosterId: string, updater: (roster: Roster) => Roster) => {
-    setRosters((prev) =>
-      prev.map((r) => (r.id === rosterId ? { ...updater(r), updatedAt: new Date().toISOString() } : r)),
-    )
-  }, [])
+  const updateRoster = useCallback(
+    (rosterId: string, updater: (roster: Roster) => Roster) => {
+      setRosters((prev) => prev.map((r) => (r.id === rosterId ? { ...updater(r), updatedAt: new Date().toISOString() } : r)))
+    },
+    [setRosters],
+  )
 
   const setLineupSlot = useCallback(
     (rosterId: string, position: Position, playerId: string | null) => {

@@ -7,7 +7,7 @@ function dominantKey(ratings: object): string {
   return entries.reduce((best, entry) => (entry[1] > best[1] ? entry : best))[0]
 }
 
-export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
+export default function PlayerCard({ player, ratings, onRemove }: PlayerWithRatings & { onRemove?: () => void }) {
   const hitter = ratings.hitter
   const pitcher = ratings.pitcher
 
@@ -25,9 +25,20 @@ export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
             )}
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-black text-sky-400">{hitter?.overall ?? pitcher?.overall ?? '-'}</div>
-          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Overall</div>
+        <div className="flex items-start gap-2">
+          <div className="text-right">
+            <div className="text-2xl font-black text-sky-400">{hitter?.overall ?? pitcher?.overall ?? '-'}</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Overall</div>
+          </div>
+          {onRemove && (
+            <button
+              onClick={onRemove}
+              title="Remove from your player pool"
+              className="rounded border border-slate-700 px-1.5 py-0.5 text-xs text-slate-500 hover:border-red-700 hover:text-red-400"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 

@@ -1,38 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { SEED_CARDS } from '../data/cards.seed'
 import type { CardEntry } from '../types/roster'
+import { createLocalStorageStore } from './createLocalStorageStore'
 
-const STORAGE_KEY = 'diamond-dynasty:cards'
-
-function loadCards(): CardEntry[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as CardEntry[]) : SEED_CARDS
-  } catch {
-    return SEED_CARDS
-  }
-}
-
-function saveCards(cards: CardEntry[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cards))
-}
+const store = createLocalStorageStore<CardEntry[]>('diamond-dynasty:cards', SEED_CARDS)
 
 export function useCardCollection() {
-  const [cards, setCards] = useState<CardEntry[]>(() => loadCards())
+  const [cards, setCards] = store.useStore()
 
-  useEffect(() => {
-    saveCards(cards)
-  }, [cards])
+  const addCard = useCallback(
+    (card: Omit<CardEntry, 'id'>) => {
+      const entry: CardEntry = { ...card, id: `card_${Date.now()}_${Math.round(Math.random() * 1e6)}` }
+      setCards((prev) => [...prev, entry])
+      return entry
+    },
+    [setCards],
+  )
 
-  const addCard = useCallback((card: Omit<CardEntry, 'id'>) => {
-    const entry: CardEntry = { ...card, id: `card_${Date.now()}_${Math.round(Math.random() * 1e6)}` }
-    setCards((prev) => [...prev, entry])
-    return entry
-  }, [])
-
-  const removeCard = useCallback((id: string) => {
-    setCards((prev) => prev.filter((c) => c.id !== id))
-  }, [])
+  const removeCard = useCallback((id: string) => setCards((prev) => prev.filter((c) => c.id !== id)), [setCards])
 
   return { cards, addCard, removeCard }
 }

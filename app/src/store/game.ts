@@ -1,27 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import type { GameState } from '../types/game'
+import { createLocalStorageStore } from './createLocalStorageStore'
 
-const STORAGE_KEY = 'diamond-dynasty:game'
-
-function loadGame(): GameState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as GameState) : null
-  } catch {
-    return null
-  }
-}
+const store = createLocalStorageStore<GameState | null>('diamond-dynasty:game', null)
 
 /** Persists a single in-progress game to localStorage (the app only supports one live game at a time). */
 export function useGameState() {
-  const [game, setGame] = useState<GameState | null>(() => loadGame())
+  const [game, setGame] = store.useStore()
 
-  useEffect(() => {
-    if (game) localStorage.setItem(STORAGE_KEY, JSON.stringify(game))
-    else localStorage.removeItem(STORAGE_KEY)
-  }, [game])
-
-  const endGame = useCallback(() => setGame(null), [])
+  const endGame = useCallback(() => setGame(null), [setGame])
 
   return { game, setGame, endGame }
 }
