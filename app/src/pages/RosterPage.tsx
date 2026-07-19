@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { downloadRosterTransferFile, parseRosterTransferPayload } from '../lib/rosterTransfer'
+import { useCustomPlayers } from '../store/customPlayers'
 import { usePlayerPool } from '../store/players'
 import { useRosters } from '../store/rosters'
 import type { Position } from '../types/player'
@@ -7,9 +9,12 @@ import { ROSTER_SLOT_LIMITS } from '../types/roster'
 
 export default function RosterPage() {
   const pool = usePlayerPool()
-  const { rosters, createRoster, deleteRoster, setLineupSlot, toggleListMember } = useRosters()
+  const { rosters, createRoster, deleteRoster, importRoster, setLineupSlot, toggleListMember } = useRosters()
+  const { addCustomPlayers } = useCustomPlayers()
   const [selectedId, setSelectedId] = useState<string | null>(rosters[0]?.id ?? null)
   const [newName, setNewName] = useState('')
+  const [importError, setImportError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const roster = rosters.find((r) => r.id === selectedId) ?? null
 
@@ -40,11 +45,38 @@ export default function RosterPage() {
     setNewName('')
   }
 
+  function handleExport() {
+    if (!roster) return
+    downloadRosterTransferFile(roster, pool)
+  }
+
+  function handleImportClick() {
+    fileInputRef.current?.click()
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImportError('')
+    try {
+      const text = await file.text()
+      const payload = parseRosterTransferPayload(text)
+      addCustomPlayers(payload.players)
+      const imported = importRoster(payload.roster)
+      setSelectedId(imported.id)
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
   return (
     <div>
       <h1 className="mb-1 text-2xl font-bold text-slate-100">Roster Builder</h1>
       <p className="mb-4 text-sm text-slate-400">
-        Build a 25-card roster: 9 starters, 5 bench, 5 starting pitchers, 6 relievers. Saved locally in your browser.
+        Build a 25-card roster: 9 starters, 5 bench, 5 starting pitchers, 6 relievers. Saved locally in your
+        browser. Export a finished roster to bring it to whichever device runs the Scorecard for game night —
+        the Scorecard needs both teams' rosters loaded in that one browser.
       </p>
 
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -73,6 +105,15 @@ export default function RosterPage() {
           Create Roster
         </button>
         {roster && (
+          <button onClick={handleExport} className="rounded-md border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800">
+            Export "{roster.name}"
+          </button>
+        )}
+        <button onClick={handleImportClick} className="rounded-md border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800">
+          Import Roster
+        </button>
+        <input ref={fileInputRef} type="file" accept="application/json" onChange={handleImportFile} className="hidden" />
+        {roster && (
           <button
             onClick={() => {
               deleteRoster(roster.id)
@@ -85,6 +126,8 @@ export default function RosterPage() {
         )}
         {roster && <span className="text-xs text-slate-500">{filledCount}/25 filled</span>}
       </div>
+
+      {importError && <p className="mb-4 text-sm text-red-400">Import failed: {importError}</p>}
 
       {!roster && <p className="text-sm text-slate-500">Create or select a roster to start building.</p>}
 

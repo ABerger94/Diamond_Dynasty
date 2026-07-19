@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import PlayerCard from '../components/PlayerCard'
 import { fetchLivePlayer, searchLivePlayers, type LiveSearchResult } from '../lib/liveSearch'
+import { useCustomPlayers } from '../store/customPlayers'
 import { usePlayerPool, type PlayerWithRatings } from '../store/players'
 import type { Position } from '../types/player'
 import { HITTER_POSITIONS, PITCHER_POSITIONS } from '../types/player'
@@ -29,10 +30,11 @@ export default function PlayersPage() {
     <div>
       <LiveSearch />
 
-      <h1 className="mb-1 mt-8 text-2xl font-bold text-slate-100">Featured Players</h1>
+      <h1 className="mb-1 mt-8 text-2xl font-bold text-slate-100">Your Player Pool</h1>
       <p className="mb-4 text-sm text-slate-400">
-        A curated set of real 2025-season players with ratings pre-computed for demo/offline use. Card
-        rarity/manufacturer never affects these numbers — only the player behind the card does.
+        The 35 built-in featured players (real 2025 stats), plus anyone you've added from the live search above.
+        Only players in this pool can go on a roster. Card rarity/manufacturer never affects these ratings — only
+        the player behind the card does.
       </p>
 
       <div className="mb-5 flex flex-wrap gap-3">
@@ -79,6 +81,7 @@ export default function PlayersPage() {
 }
 
 function LiveSearch() {
+  const { customPlayers, addCustomPlayer } = useCustomPlayers()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<LiveSearchResult[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -119,14 +122,16 @@ function LiveSearch() {
     }
   }
 
+  const alreadyAdded = selected ? customPlayers.some((p) => p.player.id === selected.player.id) : false
+
   return (
     <section className="rounded-lg border border-sky-900 bg-sky-950/20 p-4">
       <h2 className="mb-1 text-lg font-bold text-slate-100">Search All MLB Players</h2>
       <p className="mb-3 text-xs text-slate-400">
-        Live lookup against the public MLB Stats API — searches every season of MLB history, not just the
-        featured set below, and shows career totals by default. Requires the app to be deployed (or run with{' '}
-        <code>vercel dev</code>); this won't return results on a plain local dev server since it needs the
-        serverless API route.
+        Live lookup against the public MLB Stats API — searches every season of MLB history, not just your
+        player pool below, and shows career totals by default. Find someone and add them to your pool to put
+        them on a roster. Requires the app to be deployed (or run with <code>vercel dev</code>); this won't
+        return results on a plain local dev server since it needs the serverless API route.
       </p>
       <form onSubmit={runSearch} className="mb-3 flex flex-wrap gap-2">
         <input
@@ -175,6 +180,13 @@ function LiveSearch() {
               className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
             >
               Reload
+            </button>
+            <button
+              onClick={() => addCustomPlayer(selected)}
+              disabled={alreadyAdded}
+              className="rounded-md bg-emerald-700 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {alreadyAdded ? 'In your pool' : 'Add to My Players'}
             </button>
           </div>
           <PlayerCard {...selected} />

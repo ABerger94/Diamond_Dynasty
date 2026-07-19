@@ -28,10 +28,15 @@ npm run lint      # oxlint
   autograph/relic, condition) linked to a player; cosmetic only, per Rulebook §1.
 - **Roster Builder** (`/roster`) — build a 25-card roster (9 starters, 5 bench, 5 SP, 6 RP),
   saved to `localStorage`. Two-way players occupy a hitting slot and a pitcher slot at once.
+  Export a finished roster to a `.json` file and import it on another device — everything is
+  per-browser `localStorage`, with no shared backend, so this is how a roster you built on your
+  own phone gets to whatever device runs the Scorecard for game night (see `lib/rosterTransfer.ts`).
 - **Scorecard** (`/scorecard`) — pick two rosters, then record each plate appearance's result
   (Strikeout, Single, Double, ...) as the players resolve it themselves at the table. The app
   advances the lineup, tracks outs/innings/score, and shows the current batter/pitcher's ratings
-  and abilities as reference info — it never decides the outcome.
+  and abilities as reference info — it never decides the outcome. Both rosters need to be loaded
+  in this same browser; it's built for one shared device running the game, like a physical
+  scorebook, not each player's own device staying in sync.
 
 ## Data
 

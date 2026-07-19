@@ -48,6 +48,15 @@ export function useRosters() {
     setRosters((prev) => prev.filter((r) => r.id !== rosterId))
   }, [])
 
+  /** Adds an imported roster under a fresh id, so it can never collide with (or overwrite) one
+   * already on this device — see lib/rosterTransfer.ts. */
+  const importRoster = useCallback((roster: Roster) => {
+    const now = new Date().toISOString()
+    const imported: Roster = { ...roster, id: `roster_${Date.now()}_${Math.round(Math.random() * 1e6)}`, createdAt: now, updatedAt: now }
+    setRosters((prev) => [...prev, imported])
+    return imported
+  }, [])
+
   const updateRoster = useCallback((rosterId: string, updater: (roster: Roster) => Roster) => {
     setRosters((prev) =>
       prev.map((r) => (r.id === rosterId ? { ...updater(r), updatedAt: new Date().toISOString() } : r)),
@@ -80,5 +89,5 @@ export function useRosters() {
     [updateRoster],
   )
 
-  return { rosters, createRoster, deleteRoster, updateRoster, setLineupSlot, toggleListMember }
+  return { rosters, createRoster, deleteRoster, importRoster, updateRoster, setLineupSlot, toggleListMember }
 }
