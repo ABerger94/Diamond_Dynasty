@@ -89,7 +89,17 @@ export default function ScorecardPage() {
   }
 
   if (!awayRoster || !homeRoster) {
-    return <p className="text-sm text-red-400">One of this game's rosters no longer exists.</p>
+    return (
+      <div className="max-w-xl space-y-3">
+        <p className="text-sm text-red-400">
+          One of this game's rosters no longer exists (it was probably deleted on the Roster Builder page). This game
+          can't continue — discard it and start a new one.
+        </p>
+        <button onClick={endGame} className="rounded-md border border-red-800 px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-950">
+          Discard Game
+        </button>
+      </div>
+    )
   }
 
   const battingIsAway = game.half === 'top'

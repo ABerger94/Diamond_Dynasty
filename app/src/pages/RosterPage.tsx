@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { downloadRosterTransferFile, parseRosterTransferPayload } from '../lib/rosterTransfer'
 import { useCustomPlayers } from '../store/customPlayers'
+import { useGameState } from '../store/game'
 import { usePlayerPool } from '../store/players'
 import { useRosters } from '../store/rosters'
 import type { Position } from '../types/player'
@@ -11,6 +12,7 @@ export default function RosterPage() {
   const pool = usePlayerPool()
   const { rosters, createRoster, deleteRoster, importRoster, setLineupSlot, toggleListMember } = useRosters()
   const { addCustomPlayers } = useCustomPlayers()
+  const { game, endGame } = useGameState()
   const [selectedId, setSelectedId] = useState<string | null>(rosters[0]?.id ?? null)
   const [newName, setNewName] = useState('')
   const [importError, setImportError] = useState('')
@@ -116,6 +118,14 @@ export default function RosterPage() {
         {roster && (
           <button
             onClick={() => {
+              const inActiveGame = game && (game.awayRosterId === roster.id || game.homeRosterId === roster.id)
+              if (inActiveGame) {
+                const ok = window.confirm(
+                  `"${roster.name}" is being used by the game in progress on the Scorecard page. Deleting it will also discard that game. Continue?`,
+                )
+                if (!ok) return
+                endGame()
+              }
               deleteRoster(roster.id)
               setSelectedId(null)
             }}
