@@ -1,0 +1,96 @@
+import type { PlayerWithRatings } from '../store/players'
+import RatingBar from './RatingBar'
+
+function dominantKey(ratings: object): string {
+  const entries = Object.entries(ratings) as [string, number][]
+  return entries.reduce((best, entry) => (entry[1] > best[1] ? entry : best))[0]
+}
+
+export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
+  const hitter = ratings.hitter
+  const pitcher = ratings.pitcher
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
+      <div className="mb-3 flex items-start justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-slate-100">{player.name}</h3>
+          <p className="text-sm text-slate-400">
+            {player.team} · {player.primaryPosition} · {player.season} season
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-black text-sky-400">{hitter?.overall ?? pitcher?.overall ?? '-'}</div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Overall</div>
+        </div>
+      </div>
+
+      {hitter && (
+        <div className="space-y-3">
+          <RatingGroup
+            title="Offense"
+            entries={[
+              ['Contact', hitter.display.contact],
+              ['Power', hitter.display.power],
+              ['Discipline', hitter.display.discipline],
+            ]}
+            dominant={dominantKey(hitter.display)}
+          />
+          <RatingGroup
+            title="Athleticism"
+            entries={[
+              ['Speed', hitter.display.speed],
+              ['Clutch', hitter.display.clutch],
+            ]}
+            dominant={dominantKey(hitter.display)}
+          />
+          <RatingGroup title="Defense" entries={[['Fielding', hitter.display.fielding]]} dominant={dominantKey(hitter.display)} />
+        </div>
+      )}
+
+      {pitcher && (
+        <div className="space-y-3">
+          <RatingGroup
+            title="Stuff"
+            entries={[
+              ['Velocity', pitcher.display.velocity],
+              ['Stuff', pitcher.display.stuff],
+              ['Movement', pitcher.display.movement],
+            ]}
+            dominant={dominantKey(pitcher.display)}
+          />
+          <RatingGroup
+            title="Command & Endurance"
+            entries={[
+              ['Control', pitcher.display.control],
+              ['Stamina', pitcher.display.stamina],
+            ]}
+            dominant={dominantKey(pitcher.display)}
+          />
+          <RatingGroup title="Mental" entries={[['Clutch', pitcher.display.clutch]]} dominant={dominantKey(pitcher.display)} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RatingGroup({
+  title,
+  entries,
+  dominant,
+}: {
+  title: string
+  entries: [string, number][]
+  dominant: string
+}) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{title}</div>
+      <div className="space-y-1.5">
+        {entries.map(([label, value]) => (
+          <RatingBar key={label} label={label} value={value} highlight={label.toLowerCase() === dominant.toLowerCase()} />
+        ))}
+      </div>
+    </div>
+  )
+}

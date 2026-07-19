@@ -1,0 +1,34 @@
+import { NavLink } from 'react-router-dom'
+
+const links = [
+  { to: '/', label: 'Rulebook' },
+  { to: '/players', label: 'Players' },
+  { to: '/roster', label: 'Roster Builder' },
+  { to: '/play', label: 'Play Ball' },
+]
+
+export default function NavBar() {
+  return (
+    <header className="border-b border-slate-800 bg-slate-900">
+      <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
+        <span className="text-lg font-bold tracking-tight text-sky-400">Diamond Dynasty</span>
+        <nav className="flex gap-1">
+          {links.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.to === '/'}
+              className={({ isActive }) =>
+                `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isActive ? 'bg-sky-500/20 text-sky-300' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`
+              }
+            >
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </header>
+  )
+}
