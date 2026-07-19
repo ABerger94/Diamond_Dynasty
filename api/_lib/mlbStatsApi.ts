@@ -10,7 +10,7 @@
  * MLB response and comparing it to what `extractHitterSplit`/`extractPitcherSplit` expect.
  */
 
-import type { HitterStatLine, PitcherStatLine } from '../../app/src/types/player'
+import type { HitterStatLine, PitcherStatLine } from './types'
 
 const BASE = 'https://statsapi.mlb.com/api/v1'
 

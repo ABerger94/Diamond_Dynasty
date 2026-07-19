@@ -1,6 +1,6 @@
 import { fetchAvgFastballVelocity, fetchOutsAboveAverage, fetchSprintSpeed } from '../_lib/baseballSavant'
-import { deriveRatingsFromReference } from '../../app/src/lib/ratings/reference'
-import type { Player } from '../../app/src/types/player'
+import { deriveRatingsFromReference } from '../_lib/ratingsReference'
+import type { Player } from '../_lib/types'
 import { extractHitterStatLine, extractPitcherStatLine, fetchCareerStats, fetchPersonBio, fetchSeasonStats } from '../_lib/mlbStatsApi'
 
 /**
