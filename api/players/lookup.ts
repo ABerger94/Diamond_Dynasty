@@ -75,6 +75,7 @@ export default async function handler(req: any, res: any) {
 
     const primaryPosition = bio.primaryPosition?.abbreviation ?? (pitcherStats ? 'SP' : 'DH')
     const debutYear = parseInt(String(bio.mlbDebutDate ?? '').slice(0, 4), 10)
+    const birthYear = parseInt(String(bio.birthDate ?? '').slice(0, 4), 10)
     const player: Player = {
       id: String(bio.id ?? id),
       name: bio.fullName ?? bio.nameFirstLast ?? `Player ${id}`,
@@ -82,6 +83,7 @@ export default async function handler(req: any, res: any) {
       pitcherPosition: pitcherStats ? (primaryPosition === 'RP' || primaryPosition === 'CP' ? 'RP' : 'SP') : undefined,
       team: bio.currentTeam?.abbreviation ?? bio.currentTeam?.name ?? '',
       throwsBats: `${bio.batSide?.code ?? '?'}/${bio.pitchHand?.code ?? '?'}`,
+      birthYear: Number.isFinite(birthYear) ? birthYear : undefined,
       season: season ?? (Number.isFinite(debutYear) ? debutYear : new Date().getFullYear()),
       statSource: season !== undefined ? 'season' : 'career',
       hitterStats,

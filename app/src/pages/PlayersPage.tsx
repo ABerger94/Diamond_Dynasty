@@ -164,17 +164,21 @@ function LiveSearch() {
 
       {results.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
-          {results.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => pickPlayer(r.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-                selectedId === r.id ? 'border-sky-500 bg-sky-500/20 text-sky-300' : 'border-slate-700 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              {r.fullName} <span className="opacity-60">({r.team || r.primaryPosition})</span>
-            </button>
-          ))}
+          {results.map((r) => {
+            const birthYear = r.birthDate?.slice(0, 4)
+            return (
+              <button
+                key={r.id}
+                onClick={() => pickPlayer(r.id)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                  selectedId === r.id ? 'border-sky-500 bg-sky-500/20 text-sky-300' : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                {r.fullName} {birthYear && <span className="opacity-60">(b. {birthYear})</span>}{' '}
+                <span className="opacity-60">{r.team || r.primaryPosition}</span>
+              </button>
+            )
+          })}
         </div>
       )}
 

@@ -69,6 +69,7 @@ export interface Player {
   pitcherPosition?: 'SP' | 'RP'
   team: string
   throwsBats: string
+  birthYear?: number
   statSource?: 'season' | 'career'
   season: number
   hitterStats?: HitterStatLine

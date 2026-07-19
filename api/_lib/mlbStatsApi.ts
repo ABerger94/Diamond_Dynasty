@@ -27,6 +27,22 @@ export interface MlbPersonSummary {
   team: string
   bats: string
   throws: string
+  /** YYYY-MM-DD, if the endpoint included it — for telling same-name players apart. Season/search
+   * *list* endpoints may return leaner records than the full person bio (/people/{id}, used by
+   * lookup.ts) does; UNVERIFIED whether birthDate is actually present at this level. */
+  birthDate?: string
+}
+
+function toPersonSummary(p: any): MlbPersonSummary {
+  return {
+    id: String(p.id),
+    fullName: p.fullName ?? p.nameFirstLast ?? 'Unknown',
+    primaryPosition: p.primaryPosition?.abbreviation ?? p.primaryPosition?.code ?? '',
+    team: p.currentTeam?.abbreviation ?? p.currentTeam?.name ?? '',
+    bats: p.batSide?.code ?? '',
+    throws: p.pitchHand?.code ?? '',
+    birthDate: p.birthDate,
+  }
 }
 
 /** All players for a given season (MLB = sportId 1). Season can be any year the sport played,
@@ -35,14 +51,7 @@ export interface MlbPersonSummary {
 export async function fetchSeasonPlayers(season: number): Promise<MlbPersonSummary[]> {
   const data = await mlbFetch(`/sports/1/players?season=${season}`)
   const people = data?.people ?? []
-  return people.map((p: any): MlbPersonSummary => ({
-    id: String(p.id),
-    fullName: p.fullName ?? p.nameFirstLast ?? 'Unknown',
-    primaryPosition: p.primaryPosition?.abbreviation ?? p.primaryPosition?.code ?? '',
-    team: p.currentTeam?.abbreviation ?? p.currentTeam?.name ?? '',
-    bats: p.batSide?.code ?? '',
-    throws: p.pitchHand?.code ?? '',
-  }))
+  return people.map(toPersonSummary)
 }
 
 /**
@@ -60,14 +69,7 @@ export async function searchPlayersByName(query: string): Promise<MlbPersonSumma
     const data = await mlbFetch(`/people/search?names=${encodeURIComponent(query)}`)
     const people = data?.people ?? []
     if (people.length > 0) {
-      return people.map((p: any): MlbPersonSummary => ({
-        id: String(p.id),
-        fullName: p.fullName ?? p.nameFirstLast ?? 'Unknown',
-        primaryPosition: p.primaryPosition?.abbreviation ?? p.primaryPosition?.code ?? '',
-        team: p.currentTeam?.abbreviation ?? p.currentTeam?.name ?? '',
-        bats: p.batSide?.code ?? '',
-        throws: p.pitchHand?.code ?? '',
-      }))
+      return people.map(toPersonSummary)
     }
   } catch {
     // fall through to the season-scan fallback below

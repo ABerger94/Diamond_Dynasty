@@ -5,6 +5,8 @@ export interface LiveSearchResult {
   fullName: string
   primaryPosition: string
   team: string
+  /** YYYY-MM-DD, if available — for telling same-name players apart in results. */
+  birthDate?: string
 }
 
 /**

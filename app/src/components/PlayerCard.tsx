@@ -15,7 +15,10 @@ export default function PlayerCard({ player, ratings, onRemove }: PlayerWithRati
     <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
       <div className="mb-3 flex items-start justify-between">
         <div>
-          <h3 className="text-lg font-bold text-slate-100">{player.name}</h3>
+          <h3 className="text-lg font-bold text-slate-100">
+            {player.name}
+            {player.birthYear && <span className="ml-1 text-sm font-normal text-slate-500">(b. {player.birthYear})</span>}
+          </h3>
           <p className="text-sm text-slate-400">
             {player.team} · {player.primaryPosition} · {player.statSource === 'career' ? 'Career' : `${player.season} season`}
             {player.rosterTag && (
