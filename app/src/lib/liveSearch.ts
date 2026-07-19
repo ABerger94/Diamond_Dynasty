@@ -25,13 +25,16 @@ async function parseJsonResponse<T>(res: Response, notOkMessage: string): Promis
   return body
 }
 
-export async function searchLivePlayers(q: string, season: number): Promise<LiveSearchResult[]> {
-  const res = await fetch(`/api/players/search?q=${encodeURIComponent(q)}&season=${season}`)
+/** Searches across all of MLB history (no season needed to find a player). */
+export async function searchLivePlayers(q: string): Promise<LiveSearchResult[]> {
+  const res = await fetch(`/api/players/search?q=${encodeURIComponent(q)}`)
   const data = await parseJsonResponse<{ results?: LiveSearchResult[] }>(res, `Search failed (${res.status})`)
   return data.results ?? []
 }
 
-export async function fetchLivePlayer(id: string, season: number): Promise<PlayerWithRatings> {
-  const res = await fetch(`/api/players/${id}?season=${season}`)
+/** Fetches one player. Omit `season` for career totals (works for any era); pass it for a
+ * single-season line (also picks up Statcast enrichment where available). */
+export async function fetchLivePlayer(id: string, season?: number): Promise<PlayerWithRatings> {
+  const res = await fetch(`/api/players/${id}${season !== undefined ? `?season=${season}` : ''}`)
   return parseJsonResponse<PlayerWithRatings>(res, `Lookup failed (${res.status})`)
 }

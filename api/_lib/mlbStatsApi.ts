@@ -10,6 +10,8 @@
  * MLB response and comparing it to what `extractHitterSplit`/`extractPitcherSplit` expect.
  */
 
+import type { HitterStatLine, PitcherStatLine } from '../../app/src/types/player'
+
 const BASE = 'https://statsapi.mlb.com/api/v1'
 
 async function mlbFetch(path: string): Promise<any> {
@@ -28,7 +30,8 @@ export interface MlbPersonSummary {
 }
 
 /** All players for a given season (MLB = sportId 1). Season can be any year the sport played,
- * including well into the 1800s. Used both directly and as the basis for name search. */
+ * including well into the 1800s. Used as the fallback tier of name search (searchPlayersByName)
+ * and directly when a caller already knows the season. */
 export async function fetchSeasonPlayers(season: number): Promise<MlbPersonSummary[]> {
   const data = await mlbFetch(`/sports/1/players?season=${season}`)
   const people = data?.people ?? []
@@ -42,6 +45,52 @@ export async function fetchSeasonPlayers(season: number): Promise<MlbPersonSumma
   }))
 }
 
+/**
+ * Name search across ALL of MLB history, not scoped to one season — this is what "search all of
+ * recorded MLB history" actually needs, since a real person like Babe Ruth won't appear in any
+ * single current-season roster fetch. Tries the global /people/search endpoint first (lower
+ * confidence this exists with this exact name/param — UNVERIFIED, see file header); if that
+ * fails or returns nothing, falls back to scanning fetchSeasonPlayers for a small set of seasons
+ * (current year plus a handful of historically well-represented ones) so search still returns
+ * *something* useful rather than nothing. A true full-history index isn't available from a
+ * single free endpoint as far as this integration knows — see api/README.md.
+ */
+export async function searchPlayersByName(query: string): Promise<MlbPersonSummary[]> {
+  try {
+    const data = await mlbFetch(`/people/search?names=${encodeURIComponent(query)}`)
+    const people = data?.people ?? []
+    if (people.length > 0) {
+      return people.map((p: any): MlbPersonSummary => ({
+        id: String(p.id),
+        fullName: p.fullName ?? p.nameFirstLast ?? 'Unknown',
+        primaryPosition: p.primaryPosition?.abbreviation ?? p.primaryPosition?.code ?? '',
+        team: p.currentTeam?.abbreviation ?? p.currentTeam?.name ?? '',
+        bats: p.batSide?.code ?? '',
+        throws: p.pitchHand?.code ?? '',
+      }))
+    }
+  } catch {
+    // fall through to the season-scan fallback below
+  }
+
+  const q = query.toLowerCase()
+  const currentYear = new Date().getFullYear()
+  const fallbackSeasons = [currentYear, currentYear - 1, 2000, 1980, 1960, 1940, 1920]
+  const seen = new Map<string, MlbPersonSummary>()
+  for (const season of fallbackSeasons) {
+    try {
+      const players = await fetchSeasonPlayers(season)
+      for (const p of players) {
+        if (p.fullName.toLowerCase().includes(q)) seen.set(p.id, p)
+      }
+    } catch {
+      // one bad season shouldn't kill the whole search
+    }
+    if (seen.size >= 25) break
+  }
+  return [...seen.values()]
+}
+
 export async function fetchPersonBio(personId: string): Promise<any> {
   const data = await mlbFetch(`/people/${personId}`)
   return data?.people?.[0] ?? null
@@ -49,6 +98,15 @@ export async function fetchPersonBio(personId: string): Promise<any> {
 
 export async function fetchSeasonStats(personId: string, season: number, group: 'hitting' | 'pitching' | 'fielding'): Promise<any> {
   const data = await mlbFetch(`/people/${personId}/stats?stats=season&group=${group}&season=${season}`)
+  const splits = data?.stats?.[0]?.splits ?? []
+  return splits[0]?.stat ?? null
+}
+
+/** Career totals — same stat field shape as a season split, just aggregated, so the same
+ * extractHitterStatLine/extractPitcherStatLine work unchanged. Used when the caller doesn't know
+ * (or doesn't want to guess) which season a player from search results actually played in. */
+export async function fetchCareerStats(personId: string, group: 'hitting' | 'pitching' | 'fielding'): Promise<any> {
+  const data = await mlbFetch(`/people/${personId}/stats?stats=career&group=${group}`)
   const splits = data?.stats?.[0]?.splits ?? []
   return splits[0]?.stat ?? null
 }
@@ -65,19 +123,7 @@ function inningsToOuts(ip: unknown): number {
   return num(whole) * 3 + num(thirds)
 }
 
-export function extractHitterStatLine(stat: any): {
-  plateAppearances: number
-  atBats: number
-  hits: number
-  doubles: number
-  triples: number
-  homeRuns: number
-  walks: number
-  strikeouts: number
-  stolenBases: number
-  caughtStealing: number
-  fieldingRunsAboveAvg: number
-} | null {
+export function extractHitterStatLine(stat: any): HitterStatLine | null {
   if (!stat) return null
   return {
     plateAppearances: num(stat.plateAppearances),
@@ -98,18 +144,7 @@ export function extractHitterStatLine(stat: any): {
   }
 }
 
-export function extractPitcherStatLine(stat: any): {
-  outsRecorded: number
-  appearances: number
-  battersFaced: number
-  strikeouts: number
-  walks: number
-  hits: number
-  homeRuns: number
-  avgFastballVeloMph?: number
-  era?: number
-  saves?: number
-} | null {
+export function extractPitcherStatLine(stat: any): PitcherStatLine | null {
   if (!stat) return null
   const outsRecorded = inningsToOuts(stat.inningsPitched)
   const hits = num(stat.hits)

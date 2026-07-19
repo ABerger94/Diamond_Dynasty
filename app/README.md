@@ -21,7 +21,9 @@ npm run lint      # oxlint
 ## What's here
 
 - **Rulebook** (`/`) — the full rules, rendered from `src/content/rulebook.md`.
-- **Players** (`/players`) — searchable card lookup with derived 1–20 ratings and abilities.
+- **Players** (`/players`) — searchable card lookup with derived 1–20 ratings and abilities, plus
+  a live "Search All MLB Players" section backed by `/api` (any season, official MLB Stats API +
+  Statcast — see `../api/README.md`).
 - **Cards** (`/cards`) — individual physical card tracking (brand, set, parallel, serial number,
   autograph/relic, condition) linked to a player; cosmetic only, per Rulebook §1.
 - **Roster Builder** (`/roster`) — build a 25-card roster (9 starters, 5 bench, 5 SP, 6 RP),

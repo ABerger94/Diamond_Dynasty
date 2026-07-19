@@ -95,6 +95,9 @@ export interface Player {
   pitcherPosition?: 'SP' | 'RP'
   team: string
   throwsBats: string
+  /** For 'career', `season` is a representative year (e.g. debut) rather than the stats' actual
+   * span — display "Career" instead of "{season} season" when this is 'career'. */
+  statSource?: 'season' | 'career'
   season: number
   hitterStats?: HitterStatLine
   pitcherStats?: PitcherStatLine

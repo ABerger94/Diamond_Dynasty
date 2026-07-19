@@ -17,7 +17,7 @@ export default function PlayerCard({ player, ratings }: PlayerWithRatings) {
         <div>
           <h3 className="text-lg font-bold text-slate-100">{player.name}</h3>
           <p className="text-sm text-slate-400">
-            {player.team} · {player.primaryPosition} · {player.season} season
+            {player.team} · {player.primaryPosition} · {player.statSource === 'career' ? 'Career' : `${player.season} season`}
             {player.rosterTag && (
               <span className="ml-2 rounded border border-amber-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
                 {player.rosterTag}
