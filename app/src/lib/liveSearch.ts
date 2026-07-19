@@ -35,6 +35,8 @@ export async function searchLivePlayers(q: string): Promise<LiveSearchResult[]> 
 /** Fetches one player. Omit `season` for career totals (works for any era); pass it for a
  * single-season line (also picks up Statcast enrichment where available). */
 export async function fetchLivePlayer(id: string, season?: number): Promise<PlayerWithRatings> {
-  const res = await fetch(`/api/players/${id}${season !== undefined ? `?season=${season}` : ''}`)
+  const params = new URLSearchParams({ id })
+  if (season !== undefined) params.set('season', String(season))
+  const res = await fetch(`/api/players/lookup?${params}`)
   return parseJsonResponse<PlayerWithRatings>(res, `Lookup failed (${res.status})`)
 }

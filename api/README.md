@@ -4,13 +4,21 @@ Vercel Node serverless functions (auto-detected from this directory's file struc
 separate build config needed) that call MLB's public data sources server-side, so the browser
 never has to deal with CORS and API keys/dependencies never need bundling into the client.
 
-- `GET /api/players/search?q=<name>&season=<year>` — name search within one season's player pool
-  (`_lib/mlbStatsApi.ts`'s `fetchSeasonPlayers`, filtered server-side; MLB Stats API doesn't
-  reliably offer a global name-search endpoint, so this fetches a season roster and filters it).
-- `GET /api/players/[id]?season=<year>` — one player's bio + season stats, enriched with Statcast
-  metrics where available (`_lib/baseballSavant.ts`), scored with the reference-distribution
-  rating engine (`app/src/lib/ratings/reference.ts`), returned as `{ player, ratings }` —
-  directly usable by the app's `PlayerCard` component.
+- `GET /api/players/search?q=<name>` — name search across all of MLB history by default
+  (`_lib/mlbStatsApi.ts`'s `searchPlayersByName`). Pass `&season=<year>` to instead search just
+  that season's player pool (`fetchSeasonPlayers`, filtered server-side).
+- `GET /api/players/lookup?id=<mlbamId>&season=<year>` — one player's bio + stats, enriched with
+  Statcast metrics where available (`_lib/baseballSavant.ts`), scored with the
+  reference-distribution rating engine (`app/src/lib/ratings/reference.ts`), returned as
+  `{ player, ratings }` — directly usable by the app's `PlayerCard` component. Omit `season` for
+  career totals (works for any player regardless of era); pass it for a single-season line, which
+  is also what enables Statcast enrichment (season-specific leaderboards).
+
+**Both are plain filenames with query params, not `[param].ts` dynamic routes** — a dynamic route
+(`/api/players/[id].ts`) was tried first and confirmed broken in production: requests to it
+returned the SPA's `index.html` instead of reaching the function, while the plain-filename
+`search.ts` deployed and worked correctly. Root cause unconfirmed (not reproducible from this
+dev sandbox — see below); the fix was to stop relying on bracket routes rather than chase why.
 
 ## Data sources
 

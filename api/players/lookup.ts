@@ -4,7 +4,13 @@ import type { Player } from '../../app/src/types/player'
 import { extractHitterStatLine, extractPitcherStatLine, fetchCareerStats, fetchPersonBio, fetchSeasonStats } from '../_lib/mlbStatsApi'
 
 /**
- * GET /api/players/[id][?season=<year>]
+ * GET /api/players/lookup?id=<mlbamId>[&season=<year>]
+ *
+ * This used to be the dynamic route /api/players/[id].ts, but that fell through to the SPA's
+ * catch-all rewrite in production instead of reaching the function (confirmed: search.ts, a
+ * plain filename, deployed and worked; [id].ts did not — requests to it came back as HTML, not
+ * JSON). Rather than chase why Vercel's bracket-route convention didn't take here, this uses the
+ * same plain-filename-plus-query-param shape that's already proven to work.
  *
  * Without `season`, returns career totals — the point being that a search result for a
  * historical player doesn't come with "which season did they play" attached, and career stats
@@ -22,7 +28,7 @@ export default async function handler(req: any, res: any) {
   const season = seasonParam !== undefined ? parseInt(String(seasonParam), 10) : undefined
 
   if (!id) {
-    res.status(400).json({ error: 'player id is required' })
+    res.status(400).json({ error: 'id query param is required' })
     return
   }
   if (seasonParam !== undefined && !Number.isFinite(season)) {
