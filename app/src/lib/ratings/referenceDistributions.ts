@@ -48,7 +48,17 @@ export const HITTER_REFERENCE = {
 
 export const PITCHER_REFERENCE = {
   velo: [[0, 88], [10, 91], [25, 92.5], [50, 94], [75, 95.5], [90, 97], [100, 101]] as Breakpoints,
-  kRate: [[0, 0.1], [10, 0.15], [25, 0.18], [50, 0.22], [75, 0.26], [90, 0.3], [100, 0.4]] as Breakpoints,
+  /**
+   * Softened toward an all-time-blended norm rather than strictly today's game. League-average
+   * strikeout rate has risen roughly 15% -> 23% of PAs from the 1960s-90s to the 2020s, so a
+   * historical pitcher's real (unremarkable-for-their-own-era) K rate was reading as mediocre
+   * against a modern-only benchmark, while a hitter from a higher-average era read as inflated on
+   * the hitter side — see reference.ts's Velocity fallback comment for the related issue. This is
+   * still a best-effort estimate, not measured across real historical bulk data (same caveat as
+   * the rest of this file); the top of the curve is left close to unchanged since a dominant
+   * strikeout rate is dominant in any era.
+   */
+  kRate: [[0, 0.07], [10, 0.12], [25, 0.15], [50, 0.19], [75, 0.24], [90, 0.29], [100, 0.4]] as Breakpoints,
   inverseBb: [[0, 0.84], [10, 0.89], [25, 0.91], [50, 0.925], [75, 0.94], [90, 0.955], [100, 0.98]] as Breakpoints,
   outsPerAppearance: [[0, 2.5], [10, 3], [25, 4], [50, 6], [75, 12], [90, 17], [100, 21]] as Breakpoints,
   groundBallRate: [[0, 0.28], [10, 0.33], [25, 0.38], [50, 0.43], [75, 0.48], [90, 0.53], [100, 0.65]] as Breakpoints,
