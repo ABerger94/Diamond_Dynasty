@@ -4,9 +4,18 @@ import { useCustomPlayers } from '../store/customPlayers'
 import { useGameState } from '../store/game'
 import { usePlayerPool } from '../store/players'
 import { useRosters } from '../store/rosters'
-import type { Position } from '../types/player'
+import type { Player, Position } from '../types/player'
 import { eligibleLineupSlots, HITTER_POSITIONS } from '../types/player'
 import { ROSTER_SLOT_LIMITS } from '../types/roster'
+
+/** Rulebook §2: at most 4 of a roster's 25 cards may use single-season stats; the rest must be
+ * career. A player with no statSource (the built-in featured pool, which is entirely one real
+ * season's stats) counts as season-based here — same convention PlayerCard already uses to decide
+ * whether to display "{season} season" vs "Career". */
+const MAX_SEASON_CARDS = 4
+function isSeasonCard(player: Player): boolean {
+  return player.statSource !== 'career'
+}
 
 export default function RosterPage() {
   const pool = usePlayerPool()
@@ -39,6 +48,16 @@ export default function RosterPage() {
   const filledCount = roster
     ? Object.keys(roster.lineup).length + roster.bench.length + roster.startingPitchers.length + roster.reliefPitchers.length
     : 0
+
+  const seasonCount = useMemo(() => {
+    if (!roster) return 0
+    const allIds = [...Object.values(roster.lineup), ...roster.bench, ...roster.startingPitchers, ...roster.reliefPitchers]
+    return allIds.filter((id) => {
+      const player = playerById.get(id)
+      return player && isSeasonCard(player)
+    }).length
+  }, [roster, playerById])
+  const seasonCapReached = seasonCount >= MAX_SEASON_CARDS
 
   function handleCreate() {
     if (!newName.trim()) return
@@ -78,7 +97,9 @@ export default function RosterPage() {
       <p className="mb-4 text-sm text-slate-400">
         Build a 25-card roster: 9 starters, 5 bench, 5 starting pitchers, 6 relievers. Saved locally in your
         browser. Export a finished roster to bring it to whichever device runs the Scorecard for game night —
-        the Scorecard needs both teams' rosters loaded in that one browser.
+        the Scorecard needs both teams' rosters loaded in that one browser. At most {MAX_SEASON_CARDS} cards may
+        use single-season stats (Rulebook §2) — the rest need career stats, including anyone from the built-in
+        featured pool, which is entirely one season's numbers.
       </p>
 
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -135,6 +156,11 @@ export default function RosterPage() {
           </button>
         )}
         {roster && <span className="text-xs text-slate-500">{filledCount}/25 filled</span>}
+        {roster && (
+          <span className={`text-xs ${seasonCapReached ? 'text-amber-400' : 'text-slate-500'}`}>
+            {seasonCount}/{MAX_SEASON_CARDS} season cards
+          </span>
+        )}
       </div>
 
       {importError && <p className="mb-4 text-sm text-red-400">Import failed: {importError}</p>}
@@ -146,16 +172,22 @@ export default function RosterPage() {
           <section>
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Starting Lineup</h2>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {HITTER_POSITIONS.map((pos) => (
-                <LineupSlot
-                  key={pos}
-                  position={pos}
-                  currentId={roster.lineup[pos] ?? null}
-                  options={hitters.filter((h) => eligibleLineupSlots(h.player.primaryPosition).includes(pos))}
-                  usedIds={usedHitterIds}
-                  onChange={(playerId) => setLineupSlot(roster.id, pos, playerId)}
-                />
-              ))}
+              {HITTER_POSITIONS.map((pos) => {
+                const currentId = roster.lineup[pos] ?? null
+                const currentIsSeason = !!currentId && !!playerById.get(currentId) && isSeasonCard(playerById.get(currentId)!)
+                const seasonCountExcludingCurrent = seasonCount - (currentIsSeason ? 1 : 0)
+                return (
+                  <LineupSlot
+                    key={pos}
+                    position={pos}
+                    currentId={currentId}
+                    options={hitters.filter((h) => eligibleLineupSlots(h.player.primaryPosition).includes(pos))}
+                    usedIds={usedHitterIds}
+                    seasonLocked={seasonCountExcludingCurrent >= MAX_SEASON_CARDS}
+                    onChange={(playerId) => setLineupSlot(roster.id, pos, playerId)}
+                  />
+                )
+              })}
             </div>
           </section>
 
@@ -164,6 +196,7 @@ export default function RosterPage() {
             candidates={hitters}
             selected={roster.bench}
             usedIds={usedHitterIds}
+            seasonCapReached={seasonCapReached}
             onToggle={(id) => toggleListMember(roster.id, 'bench', id, ROSTER_SLOT_LIMITS.bench)}
           />
           <RosterList
@@ -171,6 +204,7 @@ export default function RosterPage() {
             candidates={startingPitchers}
             selected={roster.startingPitchers}
             usedIds={usedPitcherIds}
+            seasonCapReached={seasonCapReached}
             onToggle={(id) => toggleListMember(roster.id, 'startingPitchers', id, ROSTER_SLOT_LIMITS.startingPitchers)}
           />
           <RosterList
@@ -178,6 +212,7 @@ export default function RosterPage() {
             candidates={reliefPitchers}
             selected={roster.reliefPitchers}
             usedIds={usedPitcherIds}
+            seasonCapReached={seasonCapReached}
             onToggle={(id) => toggleListMember(roster.id, 'reliefPitchers', id, ROSTER_SLOT_LIMITS.reliefPitchers)}
           />
         </div>
@@ -193,12 +228,16 @@ function LineupSlot({
   currentId,
   options,
   usedIds,
+  seasonLocked,
   onChange,
 }: {
   position: Position
   currentId: string | null
-  options: { player: { id: string; name: string } }[]
+  options: { player: { id: string; name: string; statSource?: 'season' | 'career' } }[]
   usedIds: Set<string>
+  /** True once adding another season-based card (on top of whatever else is already on the
+   * roster, not counting whoever currently occupies this slot) would exceed the §2 cap. */
+  seasonLocked: boolean
   onChange: (playerId: string | null) => void
 }) {
   return (
@@ -210,11 +249,16 @@ function LineupSlot({
         className="w-full bg-transparent text-sm text-slate-100 focus:outline-none"
       >
         <option value="">— empty —</option>
-        {options.map((o) => (
-          <option key={o.player.id} value={o.player.id} disabled={usedIds.has(o.player.id) && o.player.id !== currentId}>
-            {o.player.name}
-          </option>
-        ))}
+        {options.map((o) => {
+          const isCurrent = o.player.id === currentId
+          const seasonBlocked = !isCurrent && seasonLocked && o.player.statSource !== 'career'
+          return (
+            <option key={o.player.id} value={o.player.id} disabled={(usedIds.has(o.player.id) && !isCurrent) || seasonBlocked}>
+              {o.player.name}
+              {seasonBlocked ? ' (season cap reached)' : ''}
+            </option>
+          )
+        })}
       </select>
     </div>
   )
@@ -225,12 +269,14 @@ function RosterList({
   candidates,
   selected,
   usedIds,
+  seasonCapReached,
   onToggle,
 }: {
   title: string
-  candidates: { player: { id: string; name: string; team: string; primaryPosition: string } }[]
+  candidates: { player: { id: string; name: string; team: string; primaryPosition: string; statSource?: 'season' | 'career' } }[]
   selected: string[]
   usedIds: Set<string>
+  seasonCapReached: boolean
   onToggle: (playerId: string) => void
 }) {
   return (
@@ -239,11 +285,13 @@ function RosterList({
       <div className="flex flex-wrap gap-2">
         {candidates.map(({ player }) => {
           const isSelected = selected.includes(player.id)
-          const disabled = !isSelected && usedIds.has(player.id)
+          const seasonBlocked = !isSelected && seasonCapReached && player.statSource !== 'career'
+          const disabled = (!isSelected && usedIds.has(player.id)) || seasonBlocked
           return (
             <button
               key={player.id}
               disabled={disabled}
+              title={seasonBlocked ? 'Season card cap reached (Rulebook §2)' : undefined}
               onClick={() => onToggle(player.id)}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 isSelected

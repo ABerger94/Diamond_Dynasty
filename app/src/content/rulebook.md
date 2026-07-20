@@ -39,7 +39,14 @@ Build a 25-player roster from your card collection:
 (lineup or bench) *and* a pitcher slot (starting or relief) at the same time — it isn't two
 copies of the card, just one card doing both jobs.
 
----
+**Season limit:** at most **4 of your 25 cards** may use single-season stats (a specific year's
+numbers, chosen when looking up a player). The rest must use career stats. This keeps a roster
+from being built almost entirely out of cherry-picked peak seasons — most of the team should be
+rated on who a player was overall, with a handful of spotlight single-season cards allowed. The
+Roster Builder enforces this directly and shows a running count. The built-in featured pool
+counts toward this limit too — it's entirely one season's stats, so at most 4 featured-pool cards
+(combined with any other season-based cards) can be on a roster at once; fill the rest from a live
+search left on career stats (the default when no season is entered).
 
 ## 3. Player Ratings
 
