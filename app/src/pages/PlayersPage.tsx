@@ -180,8 +180,8 @@ function LiveSearch() {
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault()
-    if (!query.trim() && !searchSeason.trim()) {
-      setError('Enter a name, or a season to browse without one.')
+    if (!query.trim() && !searchSeason.trim() && searchPosition === 'all') {
+      setError('Enter a name, a season, or a position to browse without one.')
       setStatus('error')
       return
     }
@@ -231,8 +231,9 @@ function LiveSearch() {
       <p className="mb-3 text-xs text-slate-400">
         Live lookup against the public MLB Stats API — searches every season of MLB history, not just your
         player pool below, and shows career totals by default. Leave the name blank and pick a season to
-        browse that season's whole player pool instead (position filter applies either way). Find someone
-        and add them to your pool to put them on a roster. Requires the app to be deployed (or run with{' '}
+        browse that season's whole player pool instead, or just pick a position to browse across MLB history
+        with no name or season needed at all (up to 500 results). Find someone and add them to your pool to
+        put them on a roster. Requires the app to be deployed (or run with{' '}
         <code>vercel dev</code>); this won't return results on a plain local dev server since it needs the
         serverless API route.
       </p>

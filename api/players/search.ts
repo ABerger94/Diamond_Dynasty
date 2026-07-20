@@ -1,4 +1,4 @@
-import { fetchSeasonPlayers, searchPlayersByName } from '../_lib/mlbStatsApi'
+import { fetchSeasonPlayers, HISTORY_SAMPLE_SEASONS, scanSeasonsForPlayers, searchPlayersByName } from '../_lib/mlbStatsApi'
 
 /**
  * GET /api/players/search?q=<name>[&season=<year>][&position=<pos>]
@@ -8,10 +8,14 @@ import { fetchSeasonPlayers, searchPlayersByName } from '../_lib/mlbStatsApi'
  * `season` alongside it to instead search just that season's player pool (fetchSeasonPlayers),
  * e.g. if you already know when someone played and want a tighter result set.
  *
- * Without `q`: browses instead of searching by name — requires `season` (there's no bounded way
- * to list "everyone in MLB history" without a name to filter by), returning that season's full
- * roster. `position` filters either mode via plain equality — the app only ever sends real MLB
- * position codes now (including plain "P" for any pitcher; MLB's own data never distinguishes
+ * Without `q` or `season`, but with `position`: browses across a representative sample of seasons
+ * (scanSeasonsForPlayers/HISTORY_SAMPLE_SEASONS) for anyone at that position — no name or season
+ * required, since a position alone is a perfectly good way to browse. Without `q` and without
+ * `position` either, `season` is required (there's no bounded way to list "everyone in MLB
+ * history" with no filter at all).
+ *
+ * `position` filters every mode via plain equality — the app only ever sends real MLB position
+ * codes now (including plain "P" for any pitcher; MLB's own data never distinguishes
  * starter/reliever, so the app doesn't ask for that split here — see types/player.ts).
  *
  * Results aren't truncated to some small fixed page size — `RESPONSE_CEILING` below is a sanity
@@ -31,8 +35,8 @@ export default async function handler(req: any, res: any) {
   const seasonParam = req.query?.season
   const position = String(req.query?.position ?? '').trim()
 
-  if (!q && seasonParam === undefined) {
-    res.status(400).json({ error: 'q or season query param is required (season is required to browse without a name)' })
+  if (!q && seasonParam === undefined && !position) {
+    res.status(400).json({ error: 'q, season, or position query param is required' })
     return
   }
 
@@ -52,9 +56,15 @@ export default async function handler(req: any, res: any) {
       return
     }
 
-    const results = await searchPlayersByName(q)
-    const filtered = results.filter((p) => matchesPosition(p.primaryPosition, position)).slice(0, RESPONSE_CEILING)
-    res.status(200).json({ results: filtered })
+    if (q) {
+      const results = await searchPlayersByName(q)
+      const filtered = results.filter((p) => matchesPosition(p.primaryPosition, position)).slice(0, RESPONSE_CEILING)
+      res.status(200).json({ results: filtered })
+      return
+    }
+
+    const matches = await scanSeasonsForPlayers(HISTORY_SAMPLE_SEASONS, RESPONSE_CEILING, (p) => matchesPosition(p.primaryPosition, position))
+    res.status(200).json({ results: matches.slice(0, RESPONSE_CEILING) })
   } catch (err) {
     res.status(502).json({ error: 'MLB Stats API request failed', detail: err instanceof Error ? err.message : String(err) })
   }

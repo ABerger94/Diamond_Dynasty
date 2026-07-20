@@ -54,15 +54,49 @@ export async function fetchSeasonPlayers(season: number): Promise<MlbPersonSumma
   return people.map(toPersonSummary)
 }
 
+/** A bounded, historically-spread sample of seasons — not all ~150 MLB has played, which would be
+ * far too slow to scan in one request. Used wherever a caller wants "across all of MLB history"
+ * results without a season of their own to anchor on (name-search fallback below, and search.ts's
+ * position-only browse). "All of history" here really means "a representative cross-section" —
+ * see api/README.md. */
+export const HISTORY_SAMPLE_SEASONS = (() => {
+  const currentYear = new Date().getFullYear()
+  const decades = [2010, 2000, 1990, 1980, 1970, 1960, 1950, 1940, 1930, 1920, 1910, 1900]
+  return [currentYear, currentYear - 1, ...decades]
+})()
+
+/** Scans a list of seasons via fetchSeasonPlayers, keeping only players matching `predicate` (or
+ * everyone, if omitted), deduped by id, stopping early once `ceiling` matches are found so a
+ * common filter doesn't force scanning every season in the list. One bad season doesn't kill the
+ * whole scan. */
+export async function scanSeasonsForPlayers(
+  seasons: number[],
+  ceiling: number,
+  predicate?: (p: MlbPersonSummary) => boolean,
+): Promise<MlbPersonSummary[]> {
+  const seen = new Map<string, MlbPersonSummary>()
+  for (const season of seasons) {
+    try {
+      const players = await fetchSeasonPlayers(season)
+      for (const p of players) {
+        if (!predicate || predicate(p)) seen.set(p.id, p)
+      }
+    } catch {
+      // one bad season shouldn't kill the whole scan
+    }
+    if (seen.size >= ceiling) break
+  }
+  return [...seen.values()]
+}
+
 /**
  * Name search across ALL of MLB history, not scoped to one season — this is what "search all of
  * recorded MLB history" actually needs, since a real person like Babe Ruth won't appear in any
  * single current-season roster fetch. Tries the global /people/search endpoint first (lower
  * confidence this exists with this exact name/param — UNVERIFIED, see file header); if that
- * fails or returns nothing, falls back to scanning fetchSeasonPlayers for a small set of seasons
- * (current year plus a handful of historically well-represented ones) so search still returns
- * *something* useful rather than nothing. A true full-history index isn't available from a
- * single free endpoint as far as this integration knows — see api/README.md.
+ * fails or returns nothing, falls back to scanning HISTORY_SAMPLE_SEASONS so search still returns
+ * *something* useful rather than nothing. A true full-history index isn't available from a single
+ * free endpoint as far as this integration knows — see api/README.md.
  */
 export async function searchPlayersByName(query: string): Promise<MlbPersonSummary[]> {
   try {
@@ -76,24 +110,9 @@ export async function searchPlayersByName(query: string): Promise<MlbPersonSumma
   }
 
   const q = query.toLowerCase()
-  const currentYear = new Date().getFullYear()
-  const fallbackSeasons = [currentYear, currentYear - 1, 2000, 1980, 1960, 1940, 1920]
-  const seen = new Map<string, MlbPersonSummary>()
-  for (const season of fallbackSeasons) {
-    try {
-      const players = await fetchSeasonPlayers(season)
-      for (const p of players) {
-        if (p.fullName.toLowerCase().includes(q)) seen.set(p.id, p)
-      }
-    } catch {
-      // one bad season shouldn't kill the whole search
-    }
-    // Not a real result cap — just an early exit once a common name has plenty of matches, so a
-    // "Smith" search doesn't force all 7 season scans. search.ts does the actual (much higher)
-    // response-size ceiling; this only controls how hard this fallback path works to find matches.
-    if (seen.size >= 300) break
-  }
-  return [...seen.values()]
+  // Not a real result cap — search.ts does the actual (much higher) response-size ceiling; this
+  // only controls how hard this fallback path works before giving up on finding more matches.
+  return scanSeasonsForPlayers(HISTORY_SAMPLE_SEASONS, 300, (p) => p.fullName.toLowerCase().includes(q))
 }
 
 export async function fetchPersonBio(personId: string): Promise<any> {
