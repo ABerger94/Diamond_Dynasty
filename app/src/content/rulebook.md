@@ -100,9 +100,15 @@ The pitcher secretly picks one pitch type:
 
 | Pitch | Uses | Modifier |
 |---|---|---|
-| Fastball | Velocity | +4 Velocity |
-| Breaking Ball | Stuff | +4 Stuff |
-| Changeup | Control | +4 Control |
+| Fastball | Velocity | +4 |
+| Breaking Ball | Stuff | +4 |
+| Changeup | Control | +4, plus Movement ÷ 10 (rounded down) |
+
+*Balance note: Changeup's Movement bonus is the pitcher's counterpart to Contact Swing's
+Discipline bonus (§5 Phase 2) — both give a finesse/contact-oriented choice a modest edge tied to
+a secondary skill, rather than leaving Movement as a card stat with no lever in the dice roll
+itself. A pitcher whose real strength is inducing weak contact (grounders, low home-run rate)
+finally has a pitch that rewards it.*
 
 ### Phase 2 — Batter Approach (secret)
 

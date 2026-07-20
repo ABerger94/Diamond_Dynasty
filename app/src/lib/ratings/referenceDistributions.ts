@@ -81,7 +81,18 @@ export const PITCHER_REFERENCE = {
   outsPerAppearance: [[0, 2.5], [10, 3], [25, 4], [50, 6], [75, 12], [90, 17], [100, 21]] as Breakpoints,
   groundBallRate: [[0, 0.28], [10, 0.33], [25, 0.38], [50, 0.43], [75, 0.48], [90, 0.53], [100, 0.65]] as Breakpoints,
   swingingStrikeRate: [[0, 0.06], [10, 0.08], [25, 0.095], [50, 0.11], [75, 0.13], [90, 0.15], [100, 0.2]] as Breakpoints,
-  inverseHr9: [[0, -2.2], [10, -1.6], [25, -1.3], [50, -1.1], [75, -0.9], [90, -0.7], [100, -0.2]] as Breakpoints,
+  /**
+   * Widened at the top end toward an all-time-blended norm. Home-run rate has swung far more
+   * dramatically across MLB history than strikeout or walk rate — dead-ball-era pitchers (pre-
+   * 1920) commonly allowed under 0.1 HR/9, something no modern-era pitcher does, while modern
+   * league-average sits around 1.1. The old 100th-percentile mark (-0.2, i.e. 0.2 HR/9) meant any
+   * pitcher from that low-home-run era clamped straight to a maxed-out Movement score — not
+   * because they were personally exceptional at it, but because the entire league allowed almost
+   * no home runs at the time. Moving the ceiling to -0.05 leaves room to differentiate within that
+   * historically-dominant tier instead of flattening it all to 20. Best-effort estimate, not
+   * measured against real bulk historical data (same caveat as the rest of this file).
+   */
+  inverseHr9: [[0, -2.4], [10, -1.7], [25, -1.35], [50, -1.05], [75, -0.8], [90, -0.55], [100, -0.05]] as Breakpoints,
   inverseEra: [[0, -6.5], [10, -5.0], [25, -4.3], [50, -3.8], [75, -3.3], [90, -2.8], [100, -1.0]] as Breakpoints,
   saveRate: [[0, 0], [50, 0], [75, 0.05], [90, 0.3], [100, 0.7]] as Breakpoints,
 }

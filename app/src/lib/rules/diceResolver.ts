@@ -54,6 +54,10 @@ export function clutchBonus(clutch: number, inning: number, regulationInnings: n
 }
 
 export function pitchValue(pitchId: PitchTypeId, pitcher: PitcherRatings): { rating: number; modifier: number; label: string } {
+  if (pitchId === 'changeup') {
+    const modifier = 4 + Math.floor(pitcher.movement / 10)
+    return { rating: pitcher.control, modifier, label: 'Changeup (Control)' }
+  }
   const pitch = PITCH_TYPES.find((p) => p.id === pitchId)!
   return { rating: pitcher[pitch.stat], modifier: pitch.modifier, label: `${pitch.label} (${pitch.stat[0].toUpperCase()}${pitch.stat.slice(1)})` }
 }
