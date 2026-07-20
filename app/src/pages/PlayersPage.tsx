@@ -233,9 +233,7 @@ function LiveSearch() {
         player pool below, and shows career totals by default. Leave the name blank and pick a season to
         browse that season's whole player pool instead, or just pick a position to browse across MLB history
         with no name or season needed at all (up to 500 results). Find someone and add them to your pool to
-        put them on a roster. Requires the app to be deployed (or run with{' '}
-        <code>vercel dev</code>); this won't return results on a plain local dev server since it needs the
-        serverless API route.
+        put them on a roster.
       </p>
       <form onSubmit={runSearch} className="mb-3 flex flex-wrap gap-2">
         <input

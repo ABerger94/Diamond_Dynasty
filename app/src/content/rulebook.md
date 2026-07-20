@@ -4,9 +4,9 @@ A tabletop baseball game played with real, physical baseball cards from any manu
 Card rarity, manufacturer, and year are cosmetic only — The LineUp companion app maps
 every card to a set of game ratings derived from the player's real MLB statistics.
 
-> **Companion app note:** the app doesn't decide outcomes on its own — the Scorecard
-> (`src/lib/rules/game.ts`) only records a result the players reached and keeps the running score,
-> outs, and lineup order. Physical dice and cards at the table remain the default way to play.
+> **Companion app note:** the app doesn't decide outcomes on its own — the Scorecard only records
+> a result the players reached and keeps the running score, outs, and lineup order. Physical dice
+> and cards at the table remain the default way to play.
 > The Scorecard's optional **Dice Resolver** can roll virtual dice for you instead — it pulls the
 > right rating and modifier from a loaded roster (or takes manual numbers with no roster), rolls,
 > and applies these exact Phase 1-4 and Defense Check rules to land on a result — but it's a
@@ -77,8 +77,7 @@ walk/count system behind it (§11, Known Limitations); it's a single-roll approx
 
 Not every data source has the same advanced splits (Sprint Speed, RISP average, ground-ball
 rate, high-leverage ERA). Where one is missing, the affected rating falls back to the next-best
-available stat instead of going unrated — see `src/lib/ratings.ts` for the exact fallback per
-rating.
+available stat instead of going unrated.
 
 ---
 
