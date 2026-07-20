@@ -28,3 +28,14 @@ createRoot(document.getElementById('root')!).render(
     <RouterProvider router={router} />
   </StrictMode>,
 )
+
+// Registering a (no-op) service worker is part of Chrome/Android's install criteria for the
+// "Add to Home Screen" prompt — see public/sw.js for why it does nothing beyond that.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Installability is a nice-to-have, not a hard requirement — a failed registration (e.g.
+      // an unsupported browser context) shouldn't be treated as an app error.
+    })
+  })
+}
