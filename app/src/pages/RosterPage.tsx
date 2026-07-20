@@ -1,12 +1,31 @@
 import { useMemo, useRef, useState } from 'react'
+import RatingBar from '../components/RatingBar'
 import { downloadRosterTransferFile, parseRosterTransferPayload } from '../lib/rosterTransfer'
+import { computeTeamRatings } from '../lib/teamRatings'
 import { useCustomPlayers } from '../store/customPlayers'
 import { useGameState } from '../store/game'
 import { usePlayerPool } from '../store/players'
 import { useRosters } from '../store/rosters'
-import type { Player, Position } from '../types/player'
+import type { HitterRatings, Player, PitcherRatings, Position } from '../types/player'
 import { eligibleLineupSlots, HITTER_POSITIONS } from '../types/player'
 import { ROSTER_SLOT_LIMITS } from '../types/roster'
+
+const HITTER_RATING_LABELS: Record<keyof HitterRatings, string> = {
+  contact: 'Contact',
+  power: 'Power',
+  discipline: 'Discipline',
+  speed: 'Speed',
+  fielding: 'Fielding',
+  clutch: 'Clutch',
+}
+const PITCHER_RATING_LABELS: Record<keyof PitcherRatings, string> = {
+  velocity: 'Velocity',
+  stuff: 'Stuff',
+  control: 'Control',
+  movement: 'Movement',
+  stamina: 'Stamina',
+  clutch: 'Clutch',
+}
 
 /** Rulebook §2: at most 4 of a roster's 25 cards may use single-season stats; the rest must be
  * career. A player with no statSource (the built-in featured pool, which is entirely one real
@@ -30,9 +49,14 @@ export default function RosterPage() {
   const roster = rosters.find((r) => r.id === selectedId) ?? null
 
   const playerById = useMemo(() => new Map(pool.map((p) => [p.player.id, p.player])), [pool])
+  const poolById = useMemo(() => new Map(pool.map((p) => [p.player.id, p])), [pool])
+  const teamRatings = useMemo(() => (roster ? computeTeamRatings(roster, poolById) : null), [roster, poolById])
   const hitters = pool.filter((p) => !!p.player.hitterStats)
-  const startingPitchers = pool.filter((p) => !!p.player.pitcherStats && p.player.pitcherPosition === 'SP')
-  const reliefPitchers = pool.filter((p) => !!p.player.pitcherStats && p.player.pitcherPosition === 'RP')
+  // Every pitcher card is eligible for either roster section — MLB data (and this app) doesn't
+  // tag a player as innately a starter or reliever, so which section a card goes in is purely
+  // the roster builder's call. usedPitcherIds (below) still keeps one card from occupying both
+  // sections on the same roster at once.
+  const pitchers = pool.filter((p) => !!p.player.pitcherStats)
 
   // Separate hitter/pitcher "used" sets (rather than one combined set) so a two-way player's
   // card can occupy both a lineup slot and a pitcher slot at once — Rulebook Two-Way Phenom.
@@ -169,6 +193,8 @@ export default function RosterPage() {
 
       {roster && (
         <div className="space-y-6">
+          {teamRatings && <TeamRatingCard ratings={teamRatings} />}
+
           <section>
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Starting Lineup</h2>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -201,7 +227,7 @@ export default function RosterPage() {
           />
           <RosterList
             title={`Starting Pitchers (${roster.startingPitchers.length}/${ROSTER_SLOT_LIMITS.startingPitchers})`}
-            candidates={startingPitchers}
+            candidates={pitchers}
             selected={roster.startingPitchers}
             usedIds={usedPitcherIds}
             seasonCapReached={seasonCapReached}
@@ -209,7 +235,7 @@ export default function RosterPage() {
           />
           <RosterList
             title={`Relief Pitchers (${roster.reliefPitchers.length}/${ROSTER_SLOT_LIMITS.reliefPitchers})`}
-            candidates={reliefPitchers}
+            candidates={pitchers}
             selected={roster.reliefPitchers}
             usedIds={usedPitcherIds}
             seasonCapReached={seasonCapReached}
@@ -220,6 +246,54 @@ export default function RosterPage() {
 
       {roster && playerById.size === 0 && null}
     </div>
+  )
+}
+
+function TeamRatingCard({ ratings }: { ratings: ReturnType<typeof computeTeamRatings> }) {
+  return (
+    <section className="rounded-lg border border-slate-800 bg-slate-900 p-4">
+      <div className="mb-4 flex flex-wrap items-center gap-6">
+        <div>
+          <div className="text-4xl font-black text-sky-400">{ratings.overall ?? '-'}</div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Team Overall</div>
+        </div>
+        <div>
+          <div className="text-xl font-bold text-slate-100">{ratings.offenseOverall ?? '-'}</div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+            Offense ({ratings.lineupCount}/9 lineup)
+          </div>
+        </div>
+        <div>
+          <div className="text-xl font-bold text-slate-100">{ratings.pitchingOverall ?? '-'}</div>
+          <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+            Pitching ({ratings.pitcherCount}/11 staff)
+          </div>
+        </div>
+      </div>
+
+      {(Object.keys(ratings.hitterAverages).length > 0 || Object.keys(ratings.pitcherAverages).length > 0) && (
+        <div className="grid grid-cols-1 gap-4 border-t border-slate-800 pt-4 sm:grid-cols-2">
+          {Object.keys(ratings.hitterAverages).length > 0 && (
+            <div className="space-y-1.5">
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Offense Averages</div>
+              {(Object.keys(HITTER_RATING_LABELS) as (keyof HitterRatings)[]).map((key) => {
+                const value = ratings.hitterAverages[key]
+                return value !== undefined && <RatingBar key={key} label={HITTER_RATING_LABELS[key]} value={value} />
+              })}
+            </div>
+          )}
+          {Object.keys(ratings.pitcherAverages).length > 0 && (
+            <div className="space-y-1.5">
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Pitching Averages</div>
+              {(Object.keys(PITCHER_RATING_LABELS) as (keyof PitcherRatings)[]).map((key) => {
+                const value = ratings.pitcherAverages[key]
+                return value !== undefined && <RatingBar key={key} label={PITCHER_RATING_LABELS[key]} value={value} />
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
 

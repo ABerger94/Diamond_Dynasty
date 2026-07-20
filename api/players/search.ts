@@ -10,7 +10,9 @@ import { fetchSeasonPlayers, searchPlayersByName } from '../_lib/mlbStatsApi'
  *
  * Without `q`: browses instead of searching by name — requires `season` (there's no bounded way
  * to list "everyone in MLB history" without a name to filter by), returning that season's full
- * roster. `position` filters either mode by exact primaryPosition match (e.g. "SS", "SP").
+ * roster. `position` filters either mode via plain equality — the app only ever sends real MLB
+ * position codes now (including plain "P" for any pitcher; MLB's own data never distinguishes
+ * starter/reliever, so the app doesn't ask for that split here — see types/player.ts).
  *
  * Results aren't truncated to some small fixed page size — `RESPONSE_CEILING` below is a sanity
  * limit on response payload size (a full season roster runs several hundred players), not a
@@ -19,6 +21,10 @@ import { fetchSeasonPlayers, searchPlayersByName } from '../_lib/mlbStatsApi'
  * UNVERIFIED against the live API — see _lib/mlbStatsApi.ts's file header.
  */
 const RESPONSE_CEILING = 500
+
+function matchesPosition(candidatePosition: string, filter: string): boolean {
+  return !filter || candidatePosition === filter
+}
 
 export default async function handler(req: any, res: any) {
   const q = String(req.query?.q ?? '').trim()
@@ -40,14 +46,14 @@ export default async function handler(req: any, res: any) {
       const players = await fetchSeasonPlayers(season)
       const matches = players
         .filter((p) => !q || p.fullName.toLowerCase().includes(q.toLowerCase()))
-        .filter((p) => !position || p.primaryPosition === position)
+        .filter((p) => matchesPosition(p.primaryPosition, position))
         .slice(0, RESPONSE_CEILING)
       res.status(200).json({ season, results: matches })
       return
     }
 
     const results = await searchPlayersByName(q)
-    const filtered = results.filter((p) => !position || p.primaryPosition === position).slice(0, RESPONSE_CEILING)
+    const filtered = results.filter((p) => matchesPosition(p.primaryPosition, position)).slice(0, RESPONSE_CEILING)
     res.status(200).json({ results: filtered })
   } catch (err) {
     res.status(502).json({ error: 'MLB Stats API request failed', detail: err instanceof Error ? err.message : String(err) })

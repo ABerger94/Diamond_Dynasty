@@ -7,7 +7,7 @@
  * care that they're declared twice, only that the shapes match.
  */
 
-export type Position = 'C' | '1B' | '2B' | '3B' | 'SS' | 'LF' | 'CF' | 'RF' | 'DH' | 'OF' | 'SP' | 'RP'
+export type Position = 'C' | '1B' | '2B' | '3B' | 'SS' | 'LF' | 'CF' | 'RF' | 'DH' | 'OF' | 'P'
 
 export interface HitterStatLine {
   plateAppearances: number
@@ -66,7 +66,6 @@ export interface Player {
   id: string
   name: string
   primaryPosition: Position
-  pitcherPosition?: 'SP' | 'RP'
   team: string
   throwsBats: string
   birthYear?: number

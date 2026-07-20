@@ -1,9 +1,16 @@
-/** Lineup-slot positions (the 9 starting spots) plus roster-category tags plus display-only tags
- * from raw source data ('OF' generic outfielder) that get resolved to concrete slots at import time. */
-export type Position = 'C' | '1B' | '2B' | '3B' | 'SS' | 'LF' | 'CF' | 'RF' | 'DH' | 'OF' | 'SP' | 'RP'
+/** Lineup-slot positions (the 9 starting spots) plus a generic pitcher tag plus display-only tags
+ * from raw source data ('OF' generic outfielder) that get resolved to concrete slots at import time.
+ * There's no 'SP'/'RP' here — MLB's own player data never distinguishes them (every pitcher is
+ * just "P"; starter vs. reliever is a role inferred from usage, not a field the API exposes), so
+ * this app doesn't pretend to know it either for browsing/searching/display. SP/RP still exists as
+ * a roster-building concept (Rulebook §2's 5 starting pitcher / 6 relief pitcher slots) — any
+ * pitcher card is eligible for either roster section; which one is purely the roster builder's
+ * choice (see Roster.startingPitchers/reliefPitchers in types/roster.ts), not an attribute of the
+ * player. In-game fatigue (lib/rules/engine.ts) follows that same roster placement. */
+export type Position = 'C' | '1B' | '2B' | '3B' | 'SS' | 'LF' | 'CF' | 'RF' | 'DH' | 'OF' | 'P'
 
 export const HITTER_POSITIONS: Position[] = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH']
-export const PITCHER_POSITIONS: Position[] = ['SP', 'RP']
+export const PITCHER_POSITIONS: Position[] = ['P']
 const OUTFIELD_SLOTS: Position[] = ['LF', 'CF', 'RF']
 
 /** Which of the 9 lineup slots a hitter may fill: their primary slot, always DH, and for a
@@ -87,12 +94,8 @@ export interface PitcherRatings {
 export interface Player {
   id: string
   name: string
-  /** Hitting/display position — for pure pitchers this is 'SP'/'RP' (same as pitcherPosition). */
+  /** Hitting/display position — for pure pitchers this is always 'P'. */
   primaryPosition: Position
-  /** Roster-category role for pitchers specifically; set whenever pitcherStats is present.
-   * Independent of primaryPosition so a two-way player (primaryPosition 'DH') still has a
-   * pitcher role for the SP/RP roster lists and fatigue rules. */
-  pitcherPosition?: 'SP' | 'RP'
   team: string
   throwsBats: string
   /** For telling same-name players apart (card lookup, search results). */

@@ -176,12 +176,16 @@ export default function ScorecardPage() {
   const pitcherId = battingIsAway ? game.homeCurrentPitcherId : game.awayCurrentPitcherId
   const pitcherEntry = pitcherId ? poolById.get(pitcherId) : undefined
   const fieldingOuts = battingIsAway ? game.homePitcherOuts : game.awayPitcherOuts
+  const fieldingRoster = battingIsAway ? homeRoster : awayRoster
+  // SP/RP is a roster-building choice (any pitcher card is eligible for either section — see
+  // RosterPage), not an attribute of the player, so fatigue follows which list this roster put
+  // them in rather than anything on the Player itself.
+  const pitcherRole: 'SP' | 'RP' = fieldingRoster?.reliefPitchers.includes(pitcherId ?? '') ? 'RP' : 'SP'
   const penalty =
     pitcherEntry?.ratings.pitcher && !isFatigueExempt(pitcherEntry.player)
-      ? fatiguePenalty(pitcherEntry.player.pitcherPosition === 'RP' ? 'RP' : 'SP', pitcherEntry.ratings.pitcher.display.stamina, fieldingOuts)
+      ? fatiguePenalty(pitcherRole, pitcherEntry.ratings.pitcher.display.stamina, fieldingOuts)
       : 0
 
-  const fieldingRoster = battingIsAway ? homeRoster : awayRoster
   const availablePitchers = fieldingRoster ? [...fieldingRoster.startingPitchers, ...fieldingRoster.reliefPitchers] : []
 
   const awayHighlightId = battingIsAway ? batterId : game.awayCurrentPitcherId

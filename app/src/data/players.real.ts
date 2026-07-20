@@ -239,16 +239,16 @@ export const SEED_PLAYERS: Player[] = RAW_PLAYERS.map((raw): Player => {
   const hitterStats = battingStats ? { ...battingStats, fieldingRunsAboveAvg: FIELDING_STATS[raw.id]?.drs ?? 0 } : undefined
 
   let primaryPosition: Position
-  let pitcherPosition: 'SP' | 'RP' | undefined
   let rosterTag: string | undefined
 
   if (isTwoWay) {
     primaryPosition = (FIELDING_PRIMARY_POSITION[raw.id] as Position) ?? 'DH'
-    pitcherPosition = 'SP'
     rosterTag = 'Two-Way'
   } else if (pitchingStats) {
-    pitcherPosition = raw.position === 'CP' ? 'RP' : 'SP'
-    primaryPosition = pitcherPosition
+    // 'P' regardless of the raw SP/CP tag — that split is a roster-building choice now (any
+    // pitcher card is eligible for either roster section), not an attribute of the player. The
+    // raw tag still drives the cosmetic "Closer" flavor label below.
+    primaryPosition = 'P'
     rosterTag = raw.position === 'CP' ? 'Closer' : undefined
   } else {
     primaryPosition = (FIELDING_PRIMARY_POSITION[raw.id] as Position) ?? (raw.position as Position)
@@ -258,7 +258,6 @@ export const SEED_PLAYERS: Player[] = RAW_PLAYERS.map((raw): Player => {
     id: raw.id,
     name: raw.name,
     primaryPosition,
-    pitcherPosition,
     team: raw.team,
     throwsBats: `${raw.bats}/${raw.throws}`,
     season: 2025,

@@ -170,6 +170,7 @@ function LiveSearch() {
   const [searchSeason, setSearchSeason] = useState('')
   const [searchPosition, setSearchPosition] = useState<Position | 'all'>('all')
   const [results, setResults] = useState<LiveSearchResult[]>([])
+  const [hasSearched, setHasSearched] = useState(false)
   const [visibleCount, setVisibleCount] = useState(RESULTS_PAGE_SIZE)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [season, setSeason] = useState('')
@@ -195,6 +196,7 @@ function LiveSearch() {
         position: searchPosition === 'all' ? undefined : searchPosition,
       })
       setResults(found)
+      setHasSearched(true)
       setVisibleCount(RESULTS_PAGE_SIZE)
       // Defaults a picked result's stat lookup to the season just browsed/searched, rather than
       // always falling back to career totals — still editable via the per-player Season field below.
@@ -297,6 +299,10 @@ function LiveSearch() {
             )}
           </p>
         </div>
+      )}
+
+      {status === 'idle' && hasSearched && results.length === 0 && (
+        <p className="mb-3 text-sm text-slate-500">No players found. Try a different name, season, or position.</p>
       )}
 
       {status === 'loading' && <p className="text-sm text-slate-400">Loading player...</p>}
