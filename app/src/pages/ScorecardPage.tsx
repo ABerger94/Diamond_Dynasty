@@ -19,6 +19,10 @@ const OUTCOME_LABELS: Record<AtBatOutcome, string> = {
   flyout: 'Flyout',
   sacFly: 'Sac Fly',
   popout: 'Popout',
+  doublePlay: 'Double Play',
+  walk: 'Walk',
+  intentionalWalk: 'Intentional Walk',
+  error: 'Error',
   infieldSingle: 'Infield Single',
   single: 'Single',
   double: 'Double',
@@ -26,7 +30,7 @@ const OUTCOME_LABELS: Record<AtBatOutcome, string> = {
   homeRun: 'Home Run',
 }
 const OUT_OUTCOMES: AtBatOutcome[] = RECORDABLE_OUTCOMES.filter((o) =>
-  ['strikeout', 'routineOut', 'groundout', 'lineout', 'flyout', 'popout', 'sacFly'].includes(o),
+  ['strikeout', 'routineOut', 'groundout', 'lineout', 'flyout', 'popout', 'sacFly', 'doublePlay'].includes(o),
 )
 const HIT_OUTCOMES: AtBatOutcome[] = RECORDABLE_OUTCOMES.filter((o) => !OUT_OUTCOMES.includes(o))
 

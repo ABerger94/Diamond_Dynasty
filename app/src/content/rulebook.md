@@ -60,8 +60,10 @@ against the current player pool.
 Reference points on the 1–20 scale: **10–11 is league average**, **17+ is All-Star caliber**,
 **19–20 is historically elite**, **3 and below is replacement level**.
 
-`Discipline` factors into Contact Swings specifically (§5 Phase 2) — it does not have a full
-walk/count system behind it yet (§11, Known Limitations).
+`Discipline` factors into Contact Swings specifically (§5 Phase 2), which is also what makes a
+Contact Swing tie result in a Walk instead of a foul ball (§5 Phase 4) — a disciplined hitter on
+a Contact Swing is the one most likely to work a pitcher into that tie. There's still no full
+walk/count system behind it (§11, Known Limitations); it's a single-roll approximation.
 
 Not every data source has the same advanced splits (Sprint Speed, RISP average, ground-ball
 rate, high-leverage ERA). Where one is missing, the affected rating falls back to the next-best
@@ -82,6 +84,9 @@ rating.
 ## 5. The At-Bat
 
 Every plate appearance resolves in four phases.
+
+**Intentional Walk:** before Phase 1, the fielding manager may skip the at-bat entirely and send
+the batter to first — no pitch, no dice. Runners advance exactly as on a regular Walk (§7).
 
 ### Phase 1 — Pitch Selection (secret)
 
@@ -123,7 +128,8 @@ Subtract the lower total from the higher total.
 | Pitcher wins by 6+ | Strikeout |
 | Pitcher wins by 3–5 | Ball Put In Play (Defense Check, §6) |
 | Pitcher wins by 1–2 | Routine Out |
-| Tie | Foul ball — reroll with the **same** pitch and swing choices |
+| Tie (Normal or Power Swing) | Foul ball — reroll with the **same** pitch and swing choices |
+| Tie (Contact Swing) | **Walk** |
 | Batter wins by 1–3 | Single |
 | Batter wins by 4–5 | Double |
 | Batter wins by 6–7 | Triple |
@@ -152,12 +158,24 @@ runner, if applicable) rolls 2d6 + Speed. Higher total wins; **the defense wins 
 | Fly Ball → Flyout (**Sacrifice Fly**: if a runner is on 3rd with fewer than 2 outs, the out is recorded and the runner scores) | Fly Ball → Single (Double if batter's margin is 5+) |
 | Pop Up → Popout | Pop Up → Single |
 
-*Roadmap (not in v1): fielder's choices, double plays, and throwing errors generated from the
-same Hit Type + Location rolls, without adding new dice.*
+**Error:** if the defender's 2d6 roll comes up snake eyes (a natural 2), it's an Error regardless
+of the total — the batter reaches 1st and existing runners each advance one base, same as a
+Single (§7), but it's logged as reaching on an error rather than a clean hit.
+
+**Double Play:** whenever a Ground Ball results in a Groundout with a runner on 1st and fewer
+than 2 outs, the lead runner is also out at 2nd — two outs on the play, no additional roll. An
+Error never turns into a double play (the defense already muffed it).
+
+*Roadmap (not in v1): fielder's choices — letting the defense choose which runner to put out —
+generated from the same Hit Type + Location rolls, without adding new dice.*
 
 ---
 
 ## 7. Base Running
+
+**Walk (including Intentional Walk):** batter to 1st. Existing runners advance only if forced —
+a runner on 1st is forced to 2nd only because the batter is now occupying 1st, and that can chain
+to 3rd/home; a runner on 2nd or 3rd with an open base behind them does **not** advance.
 
 - **Single**: batter to 1st; every existing runner advances exactly one base.
 - **Double**: batter to 2nd; every existing runner advances exactly two bases.
@@ -226,9 +244,11 @@ matchup grid); those have an explicit ruling below rather than being silently sk
 
 These are explicit, intentional gaps in v1 — not oversights:
 
-- **No walk/ball-strike count.** Every plate appearance resolves on a single roll; Discipline
-  only factors in on Contact Swings (§5 Phase 2), not a full count system.
-- **Balls in play are binary (out or hit).** No fielder's choices, double plays, or errors yet
-  (see §6 roadmap note).
+- **No pitch-by-pitch ball-strike count.** Walks exist (a Contact Swing tie, or an Intentional
+  Walk declared before Phase 1) but aren't built up from balls and strikes — every plate
+  appearance still resolves on a single roll.
+- **No fielder's choices.** The defense can't choose which runner to put out; Errors (a natural 2
+  on the Fielding roll) and Double Plays (a Groundout with a runner on 1st, fewer than 2 outs)
+  are covered (§6), but not the general case of multiple runners with a choice of who's out.
 - **No injuries/Durability rating.** Suggested by design review but not required for core
   gameplay; may be added in a future version.
