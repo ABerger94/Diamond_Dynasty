@@ -106,9 +106,9 @@ The pitcher secretly picks one pitch type:
 
 | Pitch | Uses | Modifier |
 |---|---|---|
-| Fastball | Velocity | +4 |
-| Breaking Ball | Stuff | +4 |
-| Changeup | Control | +4, plus Movement ÷ 10 (rounded down) |
+| Fastball | Velocity | +6 |
+| Breaking Ball | Stuff | +5 |
+| Changeup | Control | +5, plus Movement ÷ 10 (rounded down) |
 
 *Balance note: Changeup's Movement bonus is the pitcher's counterpart to Contact Swing's
 Discipline bonus (§5 Phase 2) — both give a finesse/contact-oriented choice a modest edge tied to
@@ -126,11 +126,12 @@ The batter secretly picks one swing type. Each swing selects which rating the ro
 | Normal Swing | Average of Contact and Power (rounded) | +4 |
 | Power Swing | Power only | +4 |
 
-*Balance note: every pitch type carries the same +4 modifier, so the batter's average modifier
-across swing types needs to land at +4 too, or the batter side of the roll-off structurally
-outweighs the pitcher's regardless of ratings. Contact Swing trades a lower modifier for a
-narrower, more reliable rating band and the Walk-on-tie payoff (§5 Phase 4); Power Swing trades
-Contact's reliability for a swingier, higher-variance rating.*
+*Balance note: pitch modifiers (§5 Phase 1) run higher than swing modifiers on purpose — a Ball
+In Play (§5 Phase 4) still gives the batter good odds of reaching base once it goes to a Defense
+Check (§6), so the pitcher's modifiers need a real edge for the two sides to net out fair over a
+full game, not an exact match. Contact Swing trades a lower modifier for a narrower, more reliable
+rating band and the Walk-on-tie payoff (§5 Phase 4); Power Swing trades Contact's reliability for
+a swingier, higher-variance rating.*
 
 ### Phase 3 — Dice Roll
 

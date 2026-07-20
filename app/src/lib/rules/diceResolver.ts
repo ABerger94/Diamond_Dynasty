@@ -13,9 +13,9 @@ import type { HitterRatings, PitcherRatings, Position } from '../../types/player
 
 export type PitchTypeId = 'fastball' | 'breakingBall' | 'changeup'
 export const PITCH_TYPES: { id: PitchTypeId; label: string; stat: keyof PitcherRatings; modifier: number }[] = [
-  { id: 'fastball', label: 'Fastball', stat: 'velocity', modifier: 4 },
-  { id: 'breakingBall', label: 'Breaking Ball', stat: 'stuff', modifier: 4 },
-  { id: 'changeup', label: 'Changeup', stat: 'control', modifier: 4 },
+  { id: 'fastball', label: 'Fastball', stat: 'velocity', modifier: 6 },
+  { id: 'breakingBall', label: 'Breaking Ball', stat: 'stuff', modifier: 5 },
+  { id: 'changeup', label: 'Changeup', stat: 'control', modifier: 5 },
 ]
 
 export type SwingTypeId = 'contact' | 'normal' | 'power'
@@ -54,11 +54,11 @@ export function clutchBonus(clutch: number, inning: number, regulationInnings: n
 }
 
 export function pitchValue(pitchId: PitchTypeId, pitcher: PitcherRatings): { rating: number; modifier: number; label: string } {
+  const pitch = PITCH_TYPES.find((p) => p.id === pitchId)!
   if (pitchId === 'changeup') {
-    const modifier = 4 + Math.floor(pitcher.movement / 10)
+    const modifier = pitch.modifier + Math.floor(pitcher.movement / 10)
     return { rating: pitcher.control, modifier, label: 'Changeup (Control)' }
   }
-  const pitch = PITCH_TYPES.find((p) => p.id === pitchId)!
   return { rating: pitcher[pitch.stat], modifier: pitch.modifier, label: `${pitch.label} (${pitch.stat[0].toUpperCase()}${pitch.stat.slice(1)})` }
 }
 
