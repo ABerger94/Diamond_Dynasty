@@ -1,4 +1,4 @@
-# Diamond Dynasty — Official Rulebook (v1.0)
+# Diamond Dynasty — Official Rulebook
 
 A tabletop baseball game played with real, physical baseball cards from any manufacturer.
 Card rarity, manufacturer, and year are cosmetic only — the Diamond Dynasty companion app maps
