@@ -10,11 +10,16 @@ import { fetchSeasonPlayers, searchPlayersByName } from '../_lib/mlbStatsApi'
  *
  * Without `q`: browses instead of searching by name — requires `season` (there's no bounded way
  * to list "everyone in MLB history" without a name to filter by), returning that season's full
- * roster. `position` filters either mode by exact primaryPosition match (e.g. "SS", "SP") and is
- * applied before the result cap so a narrow position filter isn't starved by broader matches.
+ * roster. `position` filters either mode by exact primaryPosition match (e.g. "SS", "SP").
+ *
+ * Results aren't truncated to some small fixed page size — `RESPONSE_CEILING` below is a sanity
+ * limit on response payload size (a full season roster runs several hundred players), not a
+ * meaningful cap on real results; the client paginates ("Show more") over however many come back.
  *
  * UNVERIFIED against the live API — see _lib/mlbStatsApi.ts's file header.
  */
+const RESPONSE_CEILING = 500
+
 export default async function handler(req: any, res: any) {
   const q = String(req.query?.q ?? '').trim()
   const seasonParam = req.query?.season
@@ -36,13 +41,13 @@ export default async function handler(req: any, res: any) {
       const matches = players
         .filter((p) => !q || p.fullName.toLowerCase().includes(q.toLowerCase()))
         .filter((p) => !position || p.primaryPosition === position)
-        .slice(0, 50)
+        .slice(0, RESPONSE_CEILING)
       res.status(200).json({ season, results: matches })
       return
     }
 
     const results = await searchPlayersByName(q)
-    const filtered = results.filter((p) => !position || p.primaryPosition === position).slice(0, 25)
+    const filtered = results.filter((p) => !position || p.primaryPosition === position).slice(0, RESPONSE_CEILING)
     res.status(200).json({ results: filtered })
   } catch (err) {
     res.status(502).json({ error: 'MLB Stats API request failed', detail: err instanceof Error ? err.message : String(err) })

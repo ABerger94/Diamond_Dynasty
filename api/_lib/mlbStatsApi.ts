@@ -88,7 +88,10 @@ export async function searchPlayersByName(query: string): Promise<MlbPersonSumma
     } catch {
       // one bad season shouldn't kill the whole search
     }
-    if (seen.size >= 25) break
+    // Not a real result cap — just an early exit once a common name has plenty of matches, so a
+    // "Smith" search doesn't force all 7 season scans. search.ts does the actual (much higher)
+    // response-size ceiling; this only controls how hard this fallback path works to find matches.
+    if (seen.size >= 300) break
   }
   return [...seen.values()]
 }

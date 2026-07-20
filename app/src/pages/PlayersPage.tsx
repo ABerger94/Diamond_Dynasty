@@ -162,12 +162,15 @@ export default function PlayersPage() {
   )
 }
 
+const RESULTS_PAGE_SIZE = 30
+
 function LiveSearch() {
   const { customPlayers, addCustomPlayer } = useCustomPlayers()
   const [query, setQuery] = useState('')
   const [searchSeason, setSearchSeason] = useState('')
   const [searchPosition, setSearchPosition] = useState<Position | 'all'>('all')
   const [results, setResults] = useState<LiveSearchResult[]>([])
+  const [visibleCount, setVisibleCount] = useState(RESULTS_PAGE_SIZE)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [season, setSeason] = useState('')
   const [selected, setSelected] = useState<PlayerWithRatings | null>(null)
@@ -192,6 +195,7 @@ function LiveSearch() {
         position: searchPosition === 'all' ? undefined : searchPosition,
       })
       setResults(found)
+      setVisibleCount(RESULTS_PAGE_SIZE)
       // Defaults a picked result's stat lookup to the season just browsed/searched, rather than
       // always falling back to career totals — still editable via the per-player Season field below.
       setSeason(searchSeason)
@@ -264,22 +268,34 @@ function LiveSearch() {
       {status === 'error' && <p className="text-sm text-red-400">{error}</p>}
 
       {results.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {results.map((r) => {
-            const birthYear = r.birthDate?.slice(0, 4)
-            return (
-              <button
-                key={r.id}
-                onClick={() => pickPlayer(r.id)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-                  selectedId === r.id ? 'border-sky-500 bg-sky-500/20 text-sky-300' : 'border-slate-700 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                {r.fullName} {birthYear && <span className="opacity-60">(b. {birthYear})</span>}{' '}
-                <span className="opacity-60">{r.team || r.primaryPosition}</span>
+        <div className="mb-3">
+          <div className="mb-2 flex flex-wrap gap-2">
+            {results.slice(0, visibleCount).map((r) => {
+              const birthYear = r.birthDate?.slice(0, 4)
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => pickPlayer(r.id)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                    selectedId === r.id ? 'border-sky-500 bg-sky-500/20 text-sky-300' : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  {r.fullName} {birthYear && <span className="opacity-60">(b. {birthYear})</span>}{' '}
+                  <span className="opacity-60">{r.team || r.primaryPosition}</span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="flex items-center gap-3 text-xs text-slate-500">
+            <span>
+              Showing {Math.min(visibleCount, results.length)} of {results.length}
+            </span>
+            {visibleCount < results.length && (
+              <button onClick={() => setVisibleCount((n) => n + RESULTS_PAGE_SIZE)} className="text-sky-400 hover:text-sky-300">
+                Show more
               </button>
-            )
-          })}
+            )}
+          </p>
         </div>
       )}
 
