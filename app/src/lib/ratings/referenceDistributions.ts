@@ -32,10 +32,28 @@ function scoreAgainstReference(value: number, breakpoints: Breakpoints): number 
 }
 
 export const HITTER_REFERENCE = {
-  avgStat: [[0, 0.19], [10, 0.23], [25, 0.245], [50, 0.26], [75, 0.278], [90, 0.295], [100, 0.345]] as Breakpoints,
+  /**
+   * Raised toward an all-time-blended norm rather than a single high-offense era. Unlike
+   * strikeout rate (which has climbed steadily — see PITCHER_REFERENCE.kRate), league batting
+   * average has fallen over time: the high-offense 1990s-2000s ran a league average roughly
+   * .265-.270 vs. the 2020s' ~.245, so a hitter whose career was concentrated in that stretch
+   * gets a raw AVG that reads as more dominant against a modern-only benchmark than it actually
+   * was relative to their own contemporaries. Moving the bar up (harder to clear) corrects the
+   * same direction of error as kRate's move down (easier to clear) — both are pointed at
+   * "don't let league-wide era drift masquerade as individual quality." Top of the curve (100th)
+   * is left unchanged since a truly dominant peak season is dominant in any era. Best-effort
+   * estimate, not measured against real bulk historical data (same caveat as the rest of this file).
+   */
+  avgStat: [[0, 0.2], [10, 0.242], [25, 0.258], [50, 0.273], [75, 0.29], [90, 0.305], [100, 0.35]] as Breakpoints,
   inverseK: [[0, 0.65], [10, 0.72], [25, 0.76], [50, 0.79], [75, 0.82], [90, 0.86], [100, 0.93]] as Breakpoints,
-  iso: [[0, 0.05], [10, 0.1], [25, 0.13], [50, 0.16], [75, 0.195], [90, 0.23], [100, 0.35]] as Breakpoints,
-  hrRate: [[0, 0.003], [10, 0.012], [25, 0.018], [50, 0.025], [75, 0.033], [90, 0.042], [100, 0.09]] as Breakpoints,
+  /**
+   * Also raised, though more modestly than avgStat — power's historical trend is less one-
+   * directional (the 1994-2004 high-offense era and the post-2015 launch-angle era are both
+   * elevated relative to the decades before them), so the case for correction is weaker. Still
+   * nudged up since Piazza's own prime (1993-2002) sits inside that first elevated stretch.
+   */
+  iso: [[0, 0.056], [10, 0.108], [25, 0.138], [50, 0.168], [75, 0.202], [90, 0.235], [100, 0.35]] as Breakpoints,
+  hrRate: [[0, 0.0035], [10, 0.013], [25, 0.02], [50, 0.0275], [75, 0.036], [90, 0.045], [100, 0.09]] as Breakpoints,
   bbRate: [[0, 0.02], [10, 0.045], [25, 0.06], [50, 0.08], [75, 0.1], [90, 0.13], [100, 0.2]] as Breakpoints,
   bbToK: [[0, 0.1], [10, 0.25], [25, 0.35], [50, 0.45], [75, 0.65], [90, 0.9], [100, 2.5]] as Breakpoints,
   sbRate: [[0, -0.01], [10, 0], [25, 0.002], [50, 0.006], [75, 0.015], [90, 0.035], [100, 0.1]] as Breakpoints,
