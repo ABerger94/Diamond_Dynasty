@@ -104,9 +104,15 @@ The batter secretly picks one swing type. Each swing selects which rating the ro
 
 | Swing | Rating used | Modifier |
 |---|---|---|
-| Contact Swing | Contact only | +4, plus Discipline ÷ 10 (rounded down) |
-| Normal Swing | Average of Contact and Power (rounded) | none |
-| Power Swing | Power only | +6 |
+| Contact Swing | Contact only | +2, plus Discipline ÷ 10 (rounded down) |
+| Normal Swing | Average of Contact and Power (rounded) | +4 |
+| Power Swing | Power only | +4 |
+
+*Balance note: every pitch type carries the same +4 modifier, so the batter's average modifier
+across swing types needs to land at +4 too, or the batter side of the roll-off structurally
+outweighs the pitcher's regardless of ratings. Contact Swing trades a lower modifier for a
+narrower, more reliable rating band and the Walk-on-tie payoff (§5 Phase 4); Power Swing trades
+Contact's reliability for a swingier, higher-variance rating.*
 
 ### Phase 3 — Dice Roll
 
