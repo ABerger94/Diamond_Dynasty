@@ -48,6 +48,8 @@ export interface CreateGameParams {
   homeTeamName: string
   awayStartingPitcherId: string | null
   homeStartingPitcherId: string | null
+  /** 3, 6, or 9 — chosen before the game starts (Rulebook §4). */
+  regulationInnings: number
 }
 
 export function createGame({
@@ -57,6 +59,7 @@ export function createGame({
   homeTeamName,
   awayStartingPitcherId,
   homeStartingPitcherId,
+  regulationInnings,
 }: CreateGameParams): GameState {
   const now = new Date().toISOString()
   const lineupFor = (roster: Roster | null) => {
@@ -71,6 +74,7 @@ export function createGame({
     homeRosterId: homeRoster?.id ?? null,
     awayTeamName,
     homeTeamName,
+    regulationInnings,
     inning: 1,
     half: 'top',
     outs: 0,
@@ -160,12 +164,13 @@ function applyPlayToState(state: GameState, battingIsAway: boolean, outsAdded: n
   let status: GameState['status'] = state.status
   const extraLog: string[] = []
 
-  if (state.half === 'bottom' && state.inning >= 9 && homeScore > awayScore) {
+  const regulation = state.regulationInnings
+  if (state.half === 'bottom' && state.inning >= regulation && homeScore > awayScore) {
     status = 'final'
     extraLog.push('Walk-off! The home team wins.')
-  } else if (state.half === 'top' && state.inning >= 9 && halfJustCompleted && homeScore > awayScore) {
+  } else if (state.half === 'top' && state.inning >= regulation && halfJustCompleted && homeScore > awayScore) {
     status = 'final'
-  } else if (state.half === 'bottom' && state.inning >= 9 && halfJustCompleted && awayScore !== homeScore) {
+  } else if (state.half === 'bottom' && state.inning >= regulation && halfJustCompleted && awayScore !== homeScore) {
     status = 'final'
   }
 

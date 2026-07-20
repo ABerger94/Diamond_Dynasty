@@ -49,6 +49,9 @@ export interface GameState {
    * "who's up." */
   awayTeamName: string
   homeTeamName: string
+  /** Regulation length chosen before the game started (Rulebook §4) — 3, 6, or 9. Extra innings
+   * past this still follow the normal tie-breaking rules (§9), just starting from a shorter base. */
+  regulationInnings: number
   inning: number
   half: 'top' | 'bottom'
   outs: number

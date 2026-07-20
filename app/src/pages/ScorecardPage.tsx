@@ -49,6 +49,7 @@ export default function ScorecardPage() {
   const [homePitcherId, setHomePitcherId] = useState('')
   const [awayTeamNameInput, setAwayTeamNameInput] = useState('Away')
   const [homeTeamNameInput, setHomeTeamNameInput] = useState('Home')
+  const [regulationInnings, setRegulationInnings] = useState(9)
 
   const awayRoster = rosters.find((r) => r.id === (game?.awayRosterId ?? awayRosterId)) ?? null
   const homeRoster = rosters.find((r) => r.id === (game?.homeRosterId ?? homeRosterId)) ?? null
@@ -66,6 +67,7 @@ export default function ScorecardPage() {
         homeTeamName: homeMode === 'quick' ? homeTeamNameInput.trim() : (homeRoster?.name ?? 'Home'),
         awayStartingPitcherId: awayMode === 'roster' ? awayPitcherId : null,
         homeStartingPitcherId: homeMode === 'roster' ? homePitcherId : null,
+        regulationInnings,
       }),
     )
   }
@@ -95,6 +97,22 @@ export default function ScorecardPage() {
           appearance's result as it happens. Away bats first.
         </p>
         <div className="space-y-4">
+          <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
+            <p className="mb-2 text-sm font-semibold text-slate-200">Game Length</p>
+            <div className="flex gap-2">
+              {[3, 6, 9].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setRegulationInnings(n)}
+                  className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                    regulationInnings === n ? 'border-sky-500 bg-sky-500/20 text-sky-300' : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  {n} innings
+                </button>
+              ))}
+            </div>
+          </div>
           <TeamPicker
             side="away"
             label="Away Team"
@@ -227,7 +245,9 @@ export default function ScorecardPage() {
             </tbody>
           </table>
           <p className="mt-3 text-sm text-slate-400">
-            {game.half === 'top' ? 'Top' : 'Bottom'} of inning {game.inning} · {game.outs} out{game.outs === 1 ? '' : 's'}
+            {game.half === 'top' ? 'Top' : 'Bottom'} of inning {game.inning}
+            {game.inning <= game.regulationInnings ? ` of ${game.regulationInnings}` : ' (extra innings)'} · {game.outs} out
+            {game.outs === 1 ? '' : 's'}
           </p>
         </div>
         <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-slate-800 bg-slate-900 p-4">

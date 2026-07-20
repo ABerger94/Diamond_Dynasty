@@ -74,10 +74,13 @@ rating.
 
 ## 4. Starting the Game
 
-1. Each manager reveals their starting lineup/batting order and starting pitcher.
-2. Both managers roll 1d6. High roll chooses Home or Away.
-3. The Away team always bats first.
-4. A regulation game is 9 innings; each half-inning ends after 3 outs.
+1. Before the first pitch, the managers agree on a game length: **3, 6, or 9 innings**. A full 9
+   is the traditional full game; 3 or 6 play the same in every other respect, just shorter —
+   Clutch Situations (§5 Phase 3) and game-end (§9) both scale to whichever length is chosen.
+2. Each manager reveals their starting lineup/batting order and starting pitcher.
+3. Both managers roll 1d6. High roll chooses Home or Away.
+4. The Away team always bats first.
+5. Each half-inning ends after 3 outs.
 
 ---
 
@@ -121,8 +124,9 @@ Both managers roll 2d6 simultaneously.
 - **Batter total** = 2d6 + the rating selected by the swing type (§Phase 2), plus its modifier.
 - **Pitcher total** = 2d6 + the rating selected by the pitch type (§Phase 1), plus its modifier.
 
-**Clutch Situations:** from the 7th inning on, if the game is within 2 runs, both the batter and
-pitcher add **half their Clutch rating (rounded down)** to their total as a bonus. This is the
+**Clutch Situations:** from the last 3 innings of regulation on (7th inning on for a 9-inning
+game, 4th on for 6, the whole game for 3 — see §4), if the game is within 2 runs, both the batter
+and pitcher add **half their Clutch rating (rounded down)** to their total as a bonus. This is the
 only situation Clutch affects.
 
 ### Phase 4 — Outcome Resolution
@@ -220,7 +224,8 @@ Fatigue penalties persist until the pitcher is removed from the game.
 - Managers may substitute (pinch hitter, pinch runner, defensive replacement, pitching change)
   between plate appearances only.
 - A player or pitcher removed from the game may not return.
-- After 9 innings, the team with more runs wins.
+- After regulation (3, 6, or 9 innings, chosen at the start of the game per §4), the team with
+  more runs wins.
 - If tied, play full extra innings until one team leads at the end of an inning.
 - If the home team takes the lead in the bottom half of an inning, the game ends immediately
   (walk-off).
