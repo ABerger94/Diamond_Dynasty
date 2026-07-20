@@ -57,13 +57,18 @@ export function deriveRatingsFromReference(player: Player): DerivedRatings {
   if (player.pitcherStats) {
     const c = pitcherComponents(player.pitcherStats)
     const stuffPct = scoreAgainstReference(c.kRate, PITCHER_REFERENCE.kRate)
+    const controlPct = scoreAgainstReference(c.inverseBb, PITCHER_REFERENCE.inverseBb)
     // Real pitch-tracking velocity only exists from the Statcast era (2015+) and only when a
     // season was actually requested (career-mode lookups skip that enrichment — see
     // api/players/lookup.ts). Falling back to a flat "average" for every other pitcher silently
-    // turns Velocity into a guaranteed-mediocre dump stat; the strikeout-rate-based Stuff score is
-    // a better-than-nothing proxy since harder throwers generally miss more bats.
-    const velocityPct = c.velo !== undefined ? scoreAgainstReference(c.velo, PITCHER_REFERENCE.velo) : stuffPct
-    const controlPct = scoreAgainstReference(c.inverseBb, PITCHER_REFERENCE.inverseBb)
+    // turned Velocity into a guaranteed-mediocre dump stat; falling back to *only* the
+    // strikeout-rate-based Stuff score (an earlier version of this fix) fixed that but created a
+    // different problem — Velocity became an exact mirror of Stuff, not a real third option, so a
+    // pitcher with no measured velocity effectively lost one of their three pitch choices to a
+    // duplicate instead of gaining a genuine (if approximate) one. Averaging Stuff and Control
+    // instead gives an actual estimate of "how good is this pitcher's stuff in general," blended
+    // from both of their other measurable skills, rather than echoing just one of them.
+    const velocityPct = c.velo !== undefined ? scoreAgainstReference(c.velo, PITCHER_REFERENCE.velo) : avg(stuffPct, controlPct)
 
     const movementPct =
       c.groundBallRate !== undefined
