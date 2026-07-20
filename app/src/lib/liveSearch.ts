@@ -27,9 +27,22 @@ async function parseJsonResponse<T>(res: Response, notOkMessage: string): Promis
   return body
 }
 
-/** Searches across all of MLB history (no season needed to find a player). */
-export async function searchLivePlayers(q: string): Promise<LiveSearchResult[]> {
-  const res = await fetch(`/api/players/search?q=${encodeURIComponent(q)}`)
+export interface LiveSearchParams {
+  /** Player name (substring match). Optional if `season` is given — leaving it blank browses
+   * that season's full player pool (filtered by `position` if also given) instead of searching
+   * by name. Searches across all of MLB history when `season` is omitted. */
+  query?: string
+  season?: string
+  position?: string
+}
+
+/** Searches (or, with a blank query + a season, browses) MLB players via the serverless proxy. */
+export async function searchLivePlayers({ query, season, position }: LiveSearchParams): Promise<LiveSearchResult[]> {
+  const params = new URLSearchParams()
+  if (query?.trim()) params.set('q', query.trim())
+  if (season?.trim()) params.set('season', season.trim())
+  if (position?.trim()) params.set('position', position.trim())
+  const res = await fetch(`/api/players/search?${params}`)
   const data = await parseJsonResponse<{ results?: LiveSearchResult[] }>(res, `Search failed (${res.status})`)
   return data.results ?? []
 }

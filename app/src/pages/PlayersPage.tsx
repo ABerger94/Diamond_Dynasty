@@ -165,6 +165,8 @@ export default function PlayersPage() {
 function LiveSearch() {
   const { customPlayers, addCustomPlayer } = useCustomPlayers()
   const [query, setQuery] = useState('')
+  const [searchSeason, setSearchSeason] = useState('')
+  const [searchPosition, setSearchPosition] = useState<Position | 'all'>('all')
   const [results, setResults] = useState<LiveSearchResult[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [season, setSeason] = useState('')
@@ -174,14 +176,25 @@ function LiveSearch() {
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault()
-    if (!query.trim()) return
+    if (!query.trim() && !searchSeason.trim()) {
+      setError('Enter a name, or a season to browse without one.')
+      setStatus('error')
+      return
+    }
     setStatus('searching')
     setError('')
     setSelected(null)
     setSelectedId(null)
     try {
-      const found = await searchLivePlayers(query.trim())
+      const found = await searchLivePlayers({
+        query,
+        season: searchSeason,
+        position: searchPosition === 'all' ? undefined : searchPosition,
+      })
       setResults(found)
+      // Defaults a picked result's stat lookup to the season just browsed/searched, rather than
+      // always falling back to career totals — still editable via the per-player Season field below.
+      setSeason(searchSeason)
       setStatus('idle')
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -211,17 +224,37 @@ function LiveSearch() {
       <h2 className="mb-1 text-lg font-bold text-slate-100">Search All MLB Players</h2>
       <p className="mb-3 text-xs text-slate-400">
         Live lookup against the public MLB Stats API — searches every season of MLB history, not just your
-        player pool below, and shows career totals by default. Find someone and add them to your pool to put
-        them on a roster. Requires the app to be deployed (or run with <code>vercel dev</code>); this won't
-        return results on a plain local dev server since it needs the serverless API route.
+        player pool below, and shows career totals by default. Leave the name blank and pick a season to
+        browse that season's whole player pool instead (position filter applies either way). Find someone
+        and add them to your pool to put them on a roster. Requires the app to be deployed (or run with{' '}
+        <code>vercel dev</code>); this won't return results on a plain local dev server since it needs the
+        serverless API route.
       </p>
       <form onSubmit={runSearch} className="mb-3 flex flex-wrap gap-2">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Player name..."
-          className="w-56 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+          placeholder="Player name (optional if season is set)..."
+          className="w-64 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
         />
+        <input
+          value={searchSeason}
+          onChange={(e) => setSearchSeason(e.target.value)}
+          placeholder="Season..."
+          className="w-24 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+        />
+        <select
+          value={searchPosition}
+          onChange={(e) => setSearchPosition(e.target.value as Position | 'all')}
+          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+        >
+          <option value="all">All positions</option>
+          {[...HITTER_POSITIONS, ...PITCHER_POSITIONS].map((pos) => (
+            <option key={pos} value={pos}>
+              {pos}
+            </option>
+          ))}
+        </select>
         <button type="submit" className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500">
           Search
         </button>

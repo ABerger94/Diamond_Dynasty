@@ -4,9 +4,12 @@ Vercel Node serverless functions (auto-detected from this directory's file struc
 separate build config needed) that call MLB's public data sources server-side, so the browser
 never has to deal with CORS and API keys/dependencies never need bundling into the client.
 
-- `GET /api/players/search?q=<name>` — name search across all of MLB history by default
-  (`_lib/mlbStatsApi.ts`'s `searchPlayersByName`). Pass `&season=<year>` to instead search just
-  that season's player pool (`fetchSeasonPlayers`, filtered server-side).
+- `GET /api/players/search?q=<name>&season=<year>&position=<pos>` — name search across all of MLB
+  history by default (`_lib/mlbStatsApi.ts`'s `searchPlayersByName`). Pass `season` to instead
+  search just that season's player pool (`fetchSeasonPlayers`, filtered server-side). `q` is
+  optional if `season` is given — omit it to browse that season's whole player pool instead of
+  searching by name (there's no bounded way to browse all of history without one). `position`
+  (exact match, e.g. `SS`) filters either mode.
 - `GET /api/players/lookup?id=<mlbamId>&season=<year>` — one player's bio + stats, enriched with
   Statcast metrics where available (`_lib/baseballSavant.ts`), scored with the
   reference-distribution rating engine (`_lib/ratingsReference.ts`), returned as
