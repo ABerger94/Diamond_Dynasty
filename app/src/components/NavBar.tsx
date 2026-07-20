@@ -15,7 +15,7 @@ export default function NavBar() {
         <div className="mx-auto flex max-w-6xl items-center gap-x-6 gap-y-2 px-4 py-3 sm:flex-wrap">
           <span className="flex items-center gap-2">
             <img src="/logo-mark.png" alt="" className="h-8 w-auto sm:h-9" />
-            <span className="text-base font-bold tracking-tight text-sky-400 sm:text-lg">Diamond Dynasty</span>
+            <span className="text-base font-bold tracking-tight text-sky-400 sm:text-lg">The LineUp</span>
           </span>
           {/* Desktop/tablet nav — below the sm breakpoint this moves to the fixed bottom tab bar instead. */}
           <nav className="hidden flex-wrap gap-1 sm:flex">

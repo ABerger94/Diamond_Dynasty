@@ -1,7 +1,7 @@
 import type { Position } from './player'
 
 /** A physical card the user owns, tagged to a Player. Cosmetic fields only — no gameplay effect
- * (Rulebook §1). Field names mirror the Diamond Dynasty card database export. */
+ * (Rulebook §1). Field names mirror The LineUp's card database export. */
 export interface CardEntry {
   id: string
   playerId: string

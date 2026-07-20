@@ -1,4 +1,4 @@
-# Diamond Dynasty
+# The LineUp
 
 A tabletop baseball trading card game that uses real, physical baseball cards from any
 manufacturer as the playable pieces — plus a web companion app that turns MLB stats into game

@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { createLocalStorageStore } from './createLocalStorageStore'
 
-const store = createLocalStorageStore<string[]>('diamond-dynasty:hidden-players', [])
+const store = createLocalStorageStore<string[]>('the-lineup:hidden-players', [], 'diamond-dynasty:hidden-players')
 
 /**
  * Featured (built-in) players can't be deleted — they're hardcoded data, not something in this

@@ -1,8 +1,13 @@
 import type { PlayerWithRatings } from '../store/players'
 import type { Roster } from '../types/roster'
 
+/** 'diamond-dynasty-roster' is the pre-rename value — still accepted on import (see
+ * parseRosterTransferPayload) so roster files exported before the app was renamed to The LineUp
+ * still work, but every new export uses 'the-lineup-roster'. */
+export type RosterTransferKind = 'the-lineup-roster' | 'diamond-dynasty-roster'
+
 export interface RosterTransferPayload {
-  kind: 'diamond-dynasty-roster'
+  kind: RosterTransferKind
   version: 1
   roster: Roster
   /** Every player referenced by the roster, bundled so the importing device has them even if
@@ -19,7 +24,7 @@ function rosterPlayerIds(roster: Roster): string[] {
 export function buildRosterTransferPayload(roster: Roster, pool: PlayerWithRatings[]): RosterTransferPayload {
   const ids = new Set(rosterPlayerIds(roster))
   const players = pool.filter((p) => ids.has(p.player.id))
-  return { kind: 'diamond-dynasty-roster', version: 1, roster, players }
+  return { kind: 'the-lineup-roster', version: 1, roster, players }
 }
 
 export function downloadRosterTransferFile(roster: Roster, pool: PlayerWithRatings[]): void {
@@ -35,8 +40,9 @@ export function downloadRosterTransferFile(roster: Roster, pool: PlayerWithRatin
 
 export function parseRosterTransferPayload(text: string): RosterTransferPayload {
   const data = JSON.parse(text)
-  if (data?.kind !== 'diamond-dynasty-roster' || !data.roster || !Array.isArray(data.players)) {
-    throw new Error('Not a Diamond Dynasty roster file')
+  const validKind = data?.kind === 'the-lineup-roster' || data?.kind === 'diamond-dynasty-roster'
+  if (!validKind || !data.roster || !Array.isArray(data.players)) {
+    throw new Error('Not a valid roster file')
   }
   return data as RosterTransferPayload
 }

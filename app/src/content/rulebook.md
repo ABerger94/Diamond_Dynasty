@@ -1,7 +1,7 @@
-# Diamond Dynasty — Official Rulebook
+# The LineUp — Official Rulebook
 
 A tabletop baseball game played with real, physical baseball cards from any manufacturer.
-Card rarity, manufacturer, and year are cosmetic only — the Diamond Dynasty companion app maps
+Card rarity, manufacturer, and year are cosmetic only — The LineUp companion app maps
 every card to a set of game ratings derived from the player's real MLB statistics.
 
 > **Companion app note:** the app doesn't decide outcomes on its own — the Scorecard

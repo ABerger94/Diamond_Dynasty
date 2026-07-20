@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { createLocalStorageStore } from './createLocalStorageStore'
 import type { PlayerWithRatings } from './players'
 
-const store = createLocalStorageStore<PlayerWithRatings[]>('diamond-dynasty:custom-players', [])
+const store = createLocalStorageStore<PlayerWithRatings[]>('the-lineup:custom-players', [], 'diamond-dynasty:custom-players')
 
 /**
  * Players added on this device beyond the built-in featured set — mainly those found through

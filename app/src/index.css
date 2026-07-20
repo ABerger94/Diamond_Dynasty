@@ -2,7 +2,7 @@
 @plugin "@tailwindcss/typography";
 
 /*
- * Brand palette sampled from the Diamond Dynasty crest logo (steel blue shield
+ * Brand palette sampled from The LineUp's crest logo (steel blue shield
  * border/ribbon, warm gold trim, deep navy fill). Overriding these specific
  * Tailwind `sky`/`amber`/`slate` stops re-colors every existing `bg-sky-500`,
  * `text-amber-300`, `border-slate-800`, etc. across the app to match the logo

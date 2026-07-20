@@ -1,7 +1,7 @@
 {
-  "name": "Diamond Dynasty",
-  "short_name": "Diamond Dynasty",
-  "description": "Player ratings, rosters, rulebook, and a scorecard for the Diamond Dynasty tabletop baseball card game.",
+  "name": "The LineUp",
+  "short_name": "The LineUp",
+  "description": "Player ratings, rosters, rulebook, and a scorecard for The LineUp tabletop baseball card game.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

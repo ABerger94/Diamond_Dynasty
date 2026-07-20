@@ -1,10 +1,10 @@
-# Diamond Dynasty — Companion App
+# The LineUp — Companion App
 
-A React + TypeScript + Vite web app that companions the Diamond Dynasty tabletop card game. See
+A React + TypeScript + Vite web app that companions The LineUp tabletop card game. See
 [`../docs/RULEBOOK.md`](../docs/RULEBOOK.md) (canonical copy lives at `src/content/rulebook.md`
 and renders on the app's Rulebook page).
 
-**This app never plays the game.** Diamond Dynasty is played at the table with real physical
+**This app never plays the game.** The LineUp is played at the table with real physical
 cards and real dice — the app's job is player ratings/lookup, rosters, the rulebook, and a
 scorecard that records results the players already decided. It does not roll dice or resolve
 at-bats itself.

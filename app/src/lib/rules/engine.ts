@@ -1,5 +1,5 @@
 /**
- * Diamond Dynasty is played at the table with real cards and real dice — this app does not
+ * The LineUp is played at the table with real cards and real dice — this app does not
  * simulate at-bats, roll dice, or decide outcomes (see docs/RULEBOOK.md's Companion App note).
  * What's here is purely informational bookkeeping the scorekeeper benefits from having on
  * screen: fatigue status and steal eligibility, both derived from ratings/outs already being

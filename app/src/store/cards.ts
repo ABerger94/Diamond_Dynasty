@@ -3,7 +3,7 @@ import { SEED_CARDS } from '../data/cards.seed'
 import type { CardEntry } from '../types/roster'
 import { createLocalStorageStore } from './createLocalStorageStore'
 
-const store = createLocalStorageStore<CardEntry[]>('diamond-dynasty:cards', SEED_CARDS)
+const store = createLocalStorageStore<CardEntry[]>('the-lineup:cards', SEED_CARDS, 'diamond-dynasty:cards')
 
 export function useCardCollection() {
   const [cards, setCards] = store.useStore()

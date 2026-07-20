@@ -8,11 +8,21 @@ import { useCallback, useSyncExternalStore } from 'react'
  * hiding a player not update the pool grid in the same render: usePlayerPool() and the page's own
  * remove button each held a separate useHiddenPlayers() instance).
  */
-export function createLocalStorageStore<T>(key: string, defaultValue: T) {
+export function createLocalStorageStore<T>(key: string, defaultValue: T, legacyKey?: string) {
   function load(): T {
     try {
       const raw = localStorage.getItem(key)
-      return raw ? (JSON.parse(raw) as T) : defaultValue
+      if (raw) return JSON.parse(raw) as T
+      // One-time migration from the app's pre-rename storage key, so existing users don't lose
+      // saved rosters/cards/games just because the app itself got renamed.
+      if (legacyKey) {
+        const legacyRaw = localStorage.getItem(legacyKey)
+        if (legacyRaw) {
+          localStorage.setItem(key, legacyRaw)
+          return JSON.parse(legacyRaw) as T
+        }
+      }
+      return defaultValue
     } catch {
       return defaultValue
     }

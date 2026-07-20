@@ -3,7 +3,7 @@ import type { Position } from '../types/player'
 import type { Roster } from '../types/roster'
 import { createLocalStorageStore } from './createLocalStorageStore'
 
-const store = createLocalStorageStore<Roster[]>('diamond-dynasty:rosters', [])
+const store = createLocalStorageStore<Roster[]>('the-lineup:rosters', [], 'diamond-dynasty:rosters')
 
 export function emptyRoster(name: string): Roster {
   const now = new Date().toISOString()
