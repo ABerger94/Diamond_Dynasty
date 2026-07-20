@@ -56,8 +56,13 @@ export function deriveRatingsFromReference(player: Player): DerivedRatings {
 
   if (player.pitcherStats) {
     const c = pitcherComponents(player.pitcherStats)
-    const velocityPct = c.velo !== undefined ? scoreAgainstReference(c.velo, PITCHER_REFERENCE.velo) : NEUTRAL_PERCENTILE
     const stuffPct = scoreAgainstReference(c.kRate, PITCHER_REFERENCE.kRate)
+    // Real pitch-tracking velocity only exists from the Statcast era (2015+) and only when a
+    // season was actually requested (career-mode lookups skip that enrichment — see
+    // api/players/lookup.ts). Falling back to a flat "average" for every other pitcher silently
+    // turns Velocity into a guaranteed-mediocre dump stat; the strikeout-rate-based Stuff score is
+    // a better-than-nothing proxy since harder throwers generally miss more bats.
+    const velocityPct = c.velo !== undefined ? scoreAgainstReference(c.velo, PITCHER_REFERENCE.velo) : stuffPct
     const controlPct = scoreAgainstReference(c.inverseBb, PITCHER_REFERENCE.inverseBb)
 
     const movementPct =
