@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import BasesDiagram from '../components/BasesDiagram'
+import DiceResolverPanel from '../components/DiceResolverPanel'
 import TeamLineupViewer from '../components/TeamLineupViewer'
 import { changePitcher, createGame, overrideBases, RECORDABLE_OUTCOMES, recordPlateAppearance, recordSteal } from '../lib/rules/game'
 import { fatiguePenalty, STEAL_SPEED_THRESHOLD } from '../lib/rules/engine'
@@ -322,6 +323,18 @@ export default function ScorecardPage() {
 
       {game.status === 'in_progress' && (
         <div className="mb-4 space-y-3">
+          <DiceResolverPanel
+            batter={batter}
+            pitcherEntry={pitcherEntry}
+            fieldingRoster={fieldingRoster}
+            poolById={poolById}
+            bases={game.bases}
+            outs={game.outs}
+            inning={game.inning}
+            regulationInnings={game.regulationInnings}
+            scoreDiff={Math.abs(game.awayScore - game.homeScore)}
+            onRecord={record}
+          />
           <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Record the result</p>
             <div className="mb-2 flex flex-wrap gap-2">

@@ -42,7 +42,15 @@ npm run lint      # oxlint
   browser; it's built for one shared device running the game, like a physical scorebook, not each
   player's own device staying in sync. Each rostered team's full lineup (batting order, bench,
   pitchers) is a collapsible panel — click through anyone's full stat card mid-game, not just
-  whoever's currently up (`components/TeamLineupViewer.tsx`).
+  whoever's currently up (`components/TeamLineupViewer.tsx`). An optional, collapsed-by-default
+  **Dice Resolver** panel can roll the at-bat for you instead of resolving it with physical dice —
+  pick a pitch/swing type and it pulls the rating + modifier from whichever roster is loaded (or
+  takes a manual modifier number with no roster), rolls, and walks through the full Phase 1-4 +
+  Defense Check chain (including the reroll-on-foul loop, walk-on-Contact-Swing-tie, Errors, and
+  Double Plays) down to a final outcome, which still goes through the same `record()` call as
+  clicking an outcome button directly — the dice roller only decides *which* button gets pressed,
+  never touches game state on its own (`components/DiceResolverPanel.tsx`,
+  `lib/rules/diceResolver.ts`).
 
 ## Data
 

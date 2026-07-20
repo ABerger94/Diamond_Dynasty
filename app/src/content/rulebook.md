@@ -4,11 +4,14 @@ A tabletop baseball game played with real, physical baseball cards from any manu
 Card rarity, manufacturer, and year are cosmetic only — the Diamond Dynasty companion app maps
 every card to a set of game ratings derived from the player's real MLB statistics.
 
-> **Companion app note:** the app never rolls dice or decides an outcome — that all happens at the
-> table, exactly as written below. The app's Scorecard page (`src/lib/rules/game.ts`) only records
-> the result the players already reached and keeps the running score, outs, and lineup order.
-> Ratings and ability text shown during a game are reference information for the players' own
-> dice math, not something the app applies for them.
+> **Companion app note:** the app doesn't decide outcomes on its own — the Scorecard
+> (`src/lib/rules/game.ts`) only records a result the players reached and keeps the running score,
+> outs, and lineup order. Physical dice and cards at the table remain the default way to play.
+> The Scorecard's optional **Dice Resolver** can roll virtual dice for you instead — it pulls the
+> right rating and modifier from a loaded roster (or takes manual numbers with no roster), rolls,
+> and applies these exact Phase 1-4 and Defense Check rules to land on a result — but it's a
+> convenience layer players can choose to use or ignore per at-bat, not a requirement, and it
+> never applies anything the rulebook doesn't already say below.
 
 ---
 
