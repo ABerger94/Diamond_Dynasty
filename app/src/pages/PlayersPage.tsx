@@ -4,10 +4,39 @@ import { fetchLivePlayer, searchLivePlayers, type LiveSearchResult } from '../li
 import { useCustomPlayers } from '../store/customPlayers'
 import { useHiddenPlayers } from '../store/hiddenPlayers'
 import { usePlayerPool, type PlayerWithRatings } from '../store/players'
-import type { Position } from '../types/player'
+import type { HitterRatings, PitcherRatings, Position } from '../types/player'
 import { HITTER_POSITIONS, PITCHER_POSITIONS } from '../types/player'
 
 type RoleFilter = 'all' | 'hitters' | 'pitchers'
+type SortKey = 'name' | 'overall' | keyof HitterRatings | keyof PitcherRatings
+
+const HITTER_SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'overall', label: 'Overall' },
+  { value: 'contact', label: 'Contact' },
+  { value: 'power', label: 'Power' },
+  { value: 'discipline', label: 'Discipline' },
+  { value: 'speed', label: 'Speed' },
+  { value: 'fielding', label: 'Fielding' },
+  { value: 'clutch', label: 'Clutch' },
+]
+const PITCHER_SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'overall', label: 'Overall' },
+  { value: 'velocity', label: 'Velocity' },
+  { value: 'stuff', label: 'Stuff' },
+  { value: 'control', label: 'Control' },
+  { value: 'movement', label: 'Movement' },
+  { value: 'stamina', label: 'Stamina' },
+  { value: 'clutch', label: 'Clutch' },
+]
+
+/** Reads a sort/filter value off whichever side (hitter/pitcher) of a card actually has it —
+ * 'clutch' exists on both, most others exist on only one. */
+function statValue(entry: PlayerWithRatings, key: SortKey): number {
+  if (key === 'overall') return entry.ratings.hitter?.overall ?? entry.ratings.pitcher?.overall ?? 0
+  if (entry.ratings.hitter && key in entry.ratings.hitter.display) return entry.ratings.hitter.display[key as keyof HitterRatings]
+  if (entry.ratings.pitcher && key in entry.ratings.pitcher.display) return entry.ratings.pitcher.display[key as keyof PitcherRatings]
+  return 0
+}
 
 export default function PlayersPage() {
   const pool = usePlayerPool()
@@ -16,6 +45,8 @@ export default function PlayersPage() {
   const [query, setQuery] = useState('')
   const [role, setRole] = useState<RoleFilter>('all')
   const [position, setPosition] = useState<Position | 'all'>('all')
+  const [sortBy, setSortBy] = useState<SortKey>('overall')
+  const [minOverall, setMinOverall] = useState('')
 
   const customIds = useMemo(() => new Set(customPlayers.map((p) => p.player.id)), [customPlayers])
   function removeFromPool(playerId: string) {
@@ -23,15 +54,28 @@ export default function PlayersPage() {
     else hidePlayer(playerId)
   }
 
+  function changeRole(next: RoleFilter) {
+    setRole(next)
+    setPosition('all')
+    setSortBy('overall')
+  }
+
+  const sortOptions = role === 'pitchers' ? PITCHER_SORT_OPTIONS : role === 'hitters' ? HITTER_SORT_OPTIONS : [{ value: 'overall' as const, label: 'Overall' }]
+  const minOverallNum = minOverall.trim() ? Number(minOverall) : null
+
   const filtered = useMemo(() => {
-    return pool.filter(({ player }) => {
+    const matches = pool.filter((entry) => {
+      const { player } = entry
       if (role === 'hitters' && !player.hitterStats) return false
       if (role === 'pitchers' && !player.pitcherStats) return false
       if (position !== 'all' && player.primaryPosition !== position) return false
       if (query && !player.name.toLowerCase().includes(query.toLowerCase())) return false
+      if (minOverallNum !== null && statValue(entry, 'overall') < minOverallNum) return false
       return true
     })
-  }, [pool, query, role, position])
+    if (sortBy === 'name') return [...matches].sort((a, b) => a.player.name.localeCompare(b.player.name))
+    return [...matches].sort((a, b) => statValue(b, sortBy) - statValue(a, sortBy) || a.player.name.localeCompare(b.player.name))
+  }, [pool, query, role, position, sortBy, minOverallNum])
 
   const positionOptions = role === 'pitchers' ? PITCHER_POSITIONS : role === 'hitters' ? HITTER_POSITIONS : [...HITTER_POSITIONS, ...PITCHER_POSITIONS]
 
@@ -55,10 +99,7 @@ export default function PlayersPage() {
         />
         <select
           value={role}
-          onChange={(e) => {
-            setRole(e.target.value as RoleFilter)
-            setPosition('all')
-          }}
+          onChange={(e) => changeRole(e.target.value as RoleFilter)}
           className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
         >
           <option value="all">All players</option>
@@ -77,6 +118,33 @@ export default function PlayersPage() {
             </option>
           ))}
         </select>
+        <label className="flex items-center gap-1.5 text-sm text-slate-400">
+          Sort by
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortKey)}
+            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+          >
+            {sortOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+            <option value="name">Name (A-Z)</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-slate-400">
+          Min Overall
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={minOverall}
+            onChange={(e) => setMinOverall(e.target.value)}
+            placeholder="Any"
+            className="w-16 rounded-md border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 focus:outline-none"
+          />
+        </label>
         <span className="self-center text-xs text-slate-500">{filtered.length} players</span>
         {hiddenIds.length > 0 && (
           <button onClick={unhideAll} className="self-center text-xs text-sky-400 hover:text-sky-300">
