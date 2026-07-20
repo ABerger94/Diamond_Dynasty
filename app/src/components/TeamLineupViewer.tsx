@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { TEAM_ACCENT, type TeamSide } from '../lib/teamColors'
 import type { PlayerWithRatings } from '../store/players'
 import { HITTER_POSITIONS } from '../types/player'
 import type { Roster } from '../types/roster'
@@ -28,12 +29,15 @@ export default function TeamLineupViewer({
   roster,
   poolById,
   highlightId,
+  accent,
 }: {
   teamName: string
   roster: Roster
   poolById: Map<string, PlayerWithRatings>
   highlightId?: string | null
+  accent: TeamSide
 }) {
+  const colors = TEAM_ACCENT[accent]
   const [expanded, setExpanded] = useState(false)
   const slots = useMemo(() => buildSlots(roster), [roster])
   const [selectedId, setSelectedId] = useState<string | null>(highlightId ?? slots[0]?.playerId ?? null)
@@ -51,9 +55,9 @@ export default function TeamLineupViewer({
     <div className="rounded-md border border-slate-800 bg-slate-900">
       <button
         onClick={() => setExpanded((e) => !e)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-slate-200"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold"
       >
-        <span>{teamName} Lineup</span>
+        <span className={colors.header}>{teamName} Lineup</span>
         <span className="text-slate-500">{expanded ? '▲' : '▼'}</span>
       </button>
 
@@ -70,10 +74,10 @@ export default function TeamLineupViewer({
                   key={`${slot.label}-${slot.playerId}`}
                   onClick={() => setSelectedId(slot.playerId)}
                   className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs ${
-                    isSelected ? 'bg-sky-500/20 text-sky-300' : 'text-slate-300 hover:bg-slate-800'
+                    isSelected ? `${colors.selectedBg} ${colors.selectedText}` : 'text-slate-300 hover:bg-slate-800'
                   }`}
                 >
-                  <span className="w-7 shrink-0 font-bold text-sky-400">{slot.label}</span>
+                  <span className={`w-7 shrink-0 font-bold ${colors.label}`}>{slot.label}</span>
                   <span className="flex-1 truncate">{p?.player.name ?? 'Unknown'}</span>
                   {isHighlighted && <span className="rounded bg-amber-500/20 px-1 text-[10px] font-semibold text-amber-400">NOW</span>}
                   <span className="shrink-0 text-slate-500">{overall ?? '-'}</span>

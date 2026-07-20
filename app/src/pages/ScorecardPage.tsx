@@ -4,6 +4,7 @@ import TeamLineupViewer from '../components/TeamLineupViewer'
 import { changePitcher, createGame, overrideBases, RECORDABLE_OUTCOMES, recordPlateAppearance, recordSteal } from '../lib/rules/game'
 import { fatiguePenalty, STEAL_SPEED_THRESHOLD } from '../lib/rules/engine'
 import { ABILITY_DESCRIPTIONS, isFatigueExempt } from '../lib/rules/abilities'
+import { TEAM_ACCENT, type TeamSide } from '../lib/teamColors'
 import { usePlayerPool, type PlayerWithRatings } from '../store/players'
 import { useGameState } from '../store/game'
 import { useRosters } from '../store/rosters'
@@ -78,8 +79,8 @@ export default function ScorecardPage() {
         </p>
         {rosters.length < 1 && <p className="text-sm text-amber-400">Build at least one roster first on the Roster Builder page.</p>}
         <div className="space-y-4">
-          <TeamPicker label="Away Team" rosters={rosters} rosterId={awayRosterId} onRosterChange={setAwayRosterId} pitcherId={awayPitcherId} onPitcherChange={setAwayPitcherId} poolById={poolById} />
-          <TeamPicker label="Home Team" rosters={rosters} rosterId={homeRosterId} onRosterChange={setHomeRosterId} pitcherId={homePitcherId} onPitcherChange={setHomePitcherId} poolById={poolById} />
+          <TeamPicker side="away" label="Away Team" rosters={rosters} rosterId={awayRosterId} onRosterChange={setAwayRosterId} pitcherId={awayPitcherId} onPitcherChange={setAwayPitcherId} poolById={poolById} />
+          <TeamPicker side="home" label="Home Team" rosters={rosters} rosterId={homeRosterId} onRosterChange={setHomeRosterId} pitcherId={homePitcherId} onPitcherChange={setHomePitcherId} poolById={poolById} />
           <button
             onClick={startGame}
             disabled={!awayRosterId || !homeRosterId || !awayPitcherId || !homePitcherId}
@@ -146,7 +147,8 @@ export default function ScorecardPage() {
 
       {game.status === 'final' && (
         <div className="mb-4 rounded-md border border-amber-600 bg-amber-950/40 px-4 py-3 text-amber-300">
-          Final: {awayRoster.name} {game.awayScore} — {homeRoster.name} {game.homeScore}
+          Final: <span className={TEAM_ACCENT.away.text}>{awayRoster.name} {game.awayScore}</span> —{' '}
+          <span className={TEAM_ACCENT.home.text}>{homeRoster.name} {game.homeScore}</span>
         </div>
       )}
 
@@ -166,22 +168,22 @@ export default function ScorecardPage() {
             </thead>
             <tbody>
               <tr>
-                <td className="text-left font-semibold text-slate-200">{awayRoster.name}</td>
+                <td className={`text-left font-semibold ${TEAM_ACCENT.away.text}`}>{awayRoster.name}</td>
                 {game.lineScore.map((row, i) => (
                   <td key={i} className="text-slate-300">
                     {row.away ?? '-'}
                   </td>
                 ))}
-                <td className="font-bold text-sky-400">{game.awayScore}</td>
+                <td className={`font-bold ${TEAM_ACCENT.away.text}`}>{game.awayScore}</td>
               </tr>
               <tr>
-                <td className="text-left font-semibold text-slate-200">{homeRoster.name}</td>
+                <td className={`text-left font-semibold ${TEAM_ACCENT.home.text}`}>{homeRoster.name}</td>
                 {game.lineScore.map((row, i) => (
                   <td key={i} className="text-slate-300">
                     {row.home ?? '-'}
                   </td>
                 ))}
-                <td className="font-bold text-sky-400">{game.homeScore}</td>
+                <td className={`font-bold ${TEAM_ACCENT.home.text}`}>{game.homeScore}</td>
               </tr>
             </tbody>
           </table>
@@ -206,8 +208,8 @@ export default function ScorecardPage() {
 
       {game.status === 'in_progress' && batter?.ratings.hitter && pitcherEntry?.ratings.pitcher && (
         <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">At bat</p>
+          <div className={`rounded-md border p-4 ${TEAM_ACCENT[battingIsAway ? 'away' : 'home'].border} ${TEAM_ACCENT[battingIsAway ? 'away' : 'home'].bg}`}>
+            <p className={`text-xs uppercase tracking-wide ${TEAM_ACCENT[battingIsAway ? 'away' : 'home'].label}`}>At bat</p>
             <p className="text-lg font-bold text-slate-100">{batter.player.name}</p>
             <p className="mb-2 text-xs text-slate-400">
               CON {batter.ratings.hitter.display.contact} · POW {batter.ratings.hitter.display.power} · DIS{' '}
@@ -216,8 +218,8 @@ export default function ScorecardPage() {
             </p>
             <AbilityReminders player={batter.player} />
           </div>
-          <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Pitching</p>
+          <div className={`rounded-md border p-4 ${TEAM_ACCENT[battingIsAway ? 'home' : 'away'].border} ${TEAM_ACCENT[battingIsAway ? 'home' : 'away'].bg}`}>
+            <p className={`text-xs uppercase tracking-wide ${TEAM_ACCENT[battingIsAway ? 'home' : 'away'].label}`}>Pitching</p>
             <p className="text-lg font-bold text-slate-100">
               {pitcherEntry.player.name} {penalty > 0 && <span className="text-xs font-normal text-red-400">(-{penalty} CTL fatigue)</span>}
             </p>
@@ -247,8 +249,8 @@ export default function ScorecardPage() {
       )}
 
       <div className="mb-4 space-y-3">
-        <TeamLineupViewer teamName={awayRoster.name} roster={awayRoster} poolById={poolById} highlightId={awayHighlightId} />
-        <TeamLineupViewer teamName={homeRoster.name} roster={homeRoster} poolById={poolById} highlightId={homeHighlightId} />
+        <TeamLineupViewer teamName={awayRoster.name} roster={awayRoster} poolById={poolById} highlightId={awayHighlightId} accent="away" />
+        <TeamLineupViewer teamName={homeRoster.name} roster={homeRoster} poolById={poolById} highlightId={homeHighlightId} accent="home" />
       </div>
 
       {game.status === 'in_progress' && (
@@ -325,6 +327,7 @@ function AbilityReminders({ player }: { player: PlayerWithRatings['player'] }) {
 }
 
 function TeamPicker({
+  side,
   label,
   rosters,
   rosterId,
@@ -333,6 +336,7 @@ function TeamPicker({
   onPitcherChange,
   poolById,
 }: {
+  side: TeamSide
   label: string
   rosters: { id: string; name: string; startingPitchers: string[] }[]
   rosterId: string
@@ -342,9 +346,10 @@ function TeamPicker({
   poolById: Map<string, { player: { name: string } }>
 }) {
   const roster = rosters.find((r) => r.id === rosterId)
+  const colors = TEAM_ACCENT[side]
   return (
-    <div className="rounded-md border border-slate-800 bg-slate-900 p-4">
-      <p className="mb-2 text-sm font-semibold text-slate-200">{label}</p>
+    <div className={`rounded-md border p-4 ${colors.border} ${colors.bg}`}>
+      <p className={`mb-2 text-sm font-semibold ${colors.header}`}>{label}</p>
       <select
         value={rosterId}
         onChange={(e) => {
