@@ -31,14 +31,18 @@ npm run lint      # oxlint
   Export a finished roster to a `.json` file and import it on another device — everything is
   per-browser `localStorage`, with no shared backend, so this is how a roster you built on your
   own phone gets to whatever device runs the Scorecard for game night (see `lib/rosterTransfer.ts`).
-- **Scorecard** (`/scorecard`) — pick two rosters, then record each plate appearance's result
-  (Strikeout, Single, Double, ...) as the players resolve it themselves at the table. The app
-  advances the lineup, tracks outs/innings/score, and shows the current batter/pitcher's ratings
-  and abilities as reference info — it never decides the outcome. Both rosters need to be loaded
-  in this same browser; it's built for one shared device running the game, like a physical
-  scorebook, not each player's own device staying in sync. Each team's full lineup (batting
-  order, bench, pitchers) is a collapsible panel — click through anyone's full stat card
-  mid-game, not just whoever's currently up (`components/TeamLineupViewer.tsx`).
+- **Scorecard** (`/scorecard`) — pick a roster for either side, then record each plate
+  appearance's result (Strikeout, Single, Double, ...) as the players resolve it themselves at
+  the table. The app advances the lineup, tracks outs/innings/score, and shows the current
+  batter/pitcher's ratings and abilities as reference info — it never decides the outcome. Either
+  side can instead use **Quick Play** (no saved roster — just a team name) if that side's cards
+  aren't in the app yet; the batter/pitcher shown for that side is a generic placeholder and
+  fatigue tracking doesn't apply, but score, outs, bases, and the play-by-play log all work
+  identically either way. Rosters (for whichever side uses one) need to be loaded in this same
+  browser; it's built for one shared device running the game, like a physical scorebook, not each
+  player's own device staying in sync. Each rostered team's full lineup (batting order, bench,
+  pitchers) is a collapsible panel — click through anyone's full stat card mid-game, not just
+  whoever's currently up (`components/TeamLineupViewer.tsx`).
 
 ## Data
 

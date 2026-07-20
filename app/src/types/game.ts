@@ -41,8 +41,14 @@ export interface TeamBoxScoreLine {
 
 export interface GameState {
   id: string
-  awayRosterId: string
-  homeRosterId: string
+  /** Null for a "quick play" side with no saved roster — see awayTeamName/homeTeamName below. */
+  awayRosterId: string | null
+  homeRosterId: string | null
+  /** Display name for a side. Always set — mirrors the roster's name when one is selected, or a
+   * manager-entered name for quick play, so the UI never needs a roster lookup just to show
+   * "who's up." */
+  awayTeamName: string
+  homeTeamName: string
   inning: number
   half: 'top' | 'bottom'
   outs: number

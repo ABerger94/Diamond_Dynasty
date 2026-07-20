@@ -32,20 +32,45 @@ export const RECORDABLE_OUTCOMES: AtBatOutcome[] = [
   'homeRun',
 ]
 
-export function createGame(
-  awayRoster: Roster,
-  homeRoster: Roster,
-  awayStartingPitcherId: string,
-  homeStartingPitcherId: string,
-): GameState {
+/** Stands in for a real lineup slot on a "quick play" side with no saved roster — see
+ * createGame's `awayRoster`/`homeRoster` params. Every downstream lookup (poolById.get) already
+ * treats an unrecognized id as "no player data," falling back to the generic "Batter"/"Runner"
+ * labels already used throughout this module — so quick play needs no special-casing beyond
+ * having *some* id to put in lineup order and cycle through. */
+const GENERIC_BATTER_ID = '__generic_batter__'
+
+export interface CreateGameParams {
+  /** Null for a "quick play" side — no roster, no lineup, no pitcher tracking/fatigue for that
+   * side; the batter/pitcher shown is just a generic placeholder each half-inning. */
+  awayRoster: Roster | null
+  homeRoster: Roster | null
+  awayTeamName: string
+  homeTeamName: string
+  awayStartingPitcherId: string | null
+  homeStartingPitcherId: string | null
+}
+
+export function createGame({
+  awayRoster,
+  homeRoster,
+  awayTeamName,
+  homeTeamName,
+  awayStartingPitcherId,
+  homeStartingPitcherId,
+}: CreateGameParams): GameState {
   const now = new Date().toISOString()
-  const awayLineupOrder = HITTER_POSITIONS.map((pos) => awayRoster.lineup[pos]).filter((id): id is string => !!id)
-  const homeLineupOrder = HITTER_POSITIONS.map((pos) => homeRoster.lineup[pos]).filter((id): id is string => !!id)
+  const lineupFor = (roster: Roster | null) => {
+    if (!roster) return [GENERIC_BATTER_ID]
+    const order = HITTER_POSITIONS.map((pos) => roster.lineup[pos]).filter((id): id is string => !!id)
+    return order.length > 0 ? order : [GENERIC_BATTER_ID]
+  }
 
   return {
     id: `game_${Date.now()}`,
-    awayRosterId: awayRoster.id,
-    homeRosterId: homeRoster.id,
+    awayRosterId: awayRoster?.id ?? null,
+    homeRosterId: homeRoster?.id ?? null,
+    awayTeamName,
+    homeTeamName,
     inning: 1,
     half: 'top',
     outs: 0,
@@ -59,8 +84,8 @@ export function createGame(
     homePitcherOuts: 0,
     awayCurrentPitcherId: awayStartingPitcherId,
     homeCurrentPitcherId: homeStartingPitcherId,
-    awayLineupOrder,
-    homeLineupOrder,
+    awayLineupOrder: lineupFor(awayRoster),
+    homeLineupOrder: lineupFor(homeRoster),
     awayBattingIndex: 0,
     homeBattingIndex: 0,
     log: ['Play ball!'],
