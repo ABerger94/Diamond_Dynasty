@@ -154,6 +154,7 @@ export function extractPitcherStatLine(stat: any): PitcherStatLine | null {
   const outsRecorded = inningsToOuts(stat.inningsPitched)
   const hits = num(stat.hits)
   const walks = num(stat.baseOnBalls ?? stat.walks)
+  const homeRuns = num(stat.homeRuns)
   return {
     outsRecorded,
     appearances: num(stat.gamesPlayed ?? stat.gamesPitched),
@@ -161,7 +162,13 @@ export function extractPitcherStatLine(stat: any): PitcherStatLine | null {
     strikeouts: num(stat.strikeOuts ?? stat.strikeouts),
     walks,
     hits,
-    homeRuns: num(stat.homeRuns),
+    homeRuns,
+    // HR/9, derived from the raw homeRuns/outsRecorded this endpoint already has rather than left
+    // undefined — groundBallRate/swingingStrikeRate (Statcast-only) never populate for a live
+    // lookup, so without this, Movement fell back all the way to a flat neutral rating for every
+    // live-searched pitcher, historical or modern, regardless of how good or bad their real HR
+    // suppression was.
+    hrPer9: outsRecorded > 0 ? (homeRuns * 27) / outsRecorded : undefined,
     // Average fastball velocity isn't in the basic stats endpoint (Statcast-only); left
     // undefined so Velocity falls back to a neutral rating instead of scoring as 0 mph.
     era: stat.era !== undefined ? num(stat.era) : undefined,
