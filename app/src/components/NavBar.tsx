@@ -11,12 +11,12 @@ const links = [
 export default function NavBar() {
   return (
     <header className="border-b border-slate-800 bg-slate-900">
-      <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
         <span className="flex items-center gap-2">
-          <img src="/logo-mark.png" alt="" className="h-9 w-auto" />
-          <span className="text-lg font-bold tracking-tight text-sky-400">Diamond Dynasty</span>
+          <img src="/logo-mark.png" alt="" className="h-8 w-auto sm:h-9" />
+          <span className="text-base font-bold tracking-tight text-sky-400 sm:text-lg">Diamond Dynasty</span>
         </span>
-        <nav className="flex gap-1">
+        <nav className="flex flex-wrap gap-1">
           {links.map((link) => (
             <NavLink
               key={link.to}
