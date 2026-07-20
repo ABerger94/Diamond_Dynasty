@@ -1,6 +1,33 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/*
+ * Brand palette sampled from the Diamond Dynasty crest logo (steel blue shield
+ * border/ribbon, warm gold trim, deep navy fill). Overriding these specific
+ * Tailwind `sky`/`amber`/`slate` stops re-colors every existing `bg-sky-500`,
+ * `text-amber-300`, `border-slate-800`, etc. across the app to match the logo
+ * without having to touch each component's class names individually.
+ */
+@theme {
+  --color-sky-300: #86b8d6;
+  --color-sky-400: #5b9bc4;
+  --color-sky-500: #3c7197;
+  --color-sky-600: #2e5a79;
+  --color-sky-900: #16283a;
+  --color-sky-950: #0d1826;
+
+  --color-amber-300: #e4cd98;
+  --color-amber-400: #d4af63;
+  --color-amber-600: #9c7a3d;
+  --color-amber-700: #7c5f2e;
+  --color-amber-950: #241a0c;
+
+  --color-slate-700: #2e3b57;
+  --color-slate-800: #1b2740;
+  --color-slate-900: #101a2e;
+  --color-slate-950: #070c16;
+}
+
 :root {
   color-scheme: light dark;
 }

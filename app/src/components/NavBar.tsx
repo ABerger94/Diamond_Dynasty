@@ -12,7 +12,10 @@ export default function NavBar() {
   return (
     <header className="border-b border-slate-800 bg-slate-900">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-        <span className="text-lg font-bold tracking-tight text-sky-400">Diamond Dynasty</span>
+        <span className="flex items-center gap-2">
+          <img src="/logo-mark.png" alt="" className="h-9 w-auto" />
+          <span className="text-lg font-bold tracking-tight text-sky-400">Diamond Dynasty</span>
+        </span>
         <nav className="flex gap-1">
           {links.map((link) => (
             <NavLink
